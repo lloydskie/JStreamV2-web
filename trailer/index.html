@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>Trailer YouTube API + TMDB Test</title>
+	<style>
+		body{font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1.5rem;background:#f6f6f6}
+		#player{width:100%;max-width:960px;height:540px;background:#000}
+		#controls{display:flex;gap:8px;flex-wrap:wrap}
+		button,input,select{padding:8px 12px;border-radius:4px;border:1px solid #ccc;background:#fff;cursor:pointer}
+		#status{max-width:960px;color:#333}
+		#results{width:100%;max-width:960px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+		.card{background:#fff;padding:8px;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,0.06)}
+		.title{font-weight:600}
+	</style>
+</head>
+<body>
+	<h1>YouTube IFrame API + TMDB Trailer Finder</h1>
+	<p id="desc">Enter your TMDB API key, fetch popular movies or TV shows, then click an item to load its YouTube trailer into the player. Browsers may block autoplay with sound; if blocked use the provided button.</p>
+
+	<div style="display:flex;gap:8px;align-items:center;width:100%;max-width:960px;">
+		<input id="tmdbKey" placeholder="Enter TMDB API key" style="flex:1" />
+		<input id="tmdbToken" placeholder="TMDB Read Access Token (optional)" style="flex:1;max-width:420px" />
+		<button id="fetchMovies">Fetch Movies</button>
+		<button id="fetchTV">Fetch TV Shows</button>
+	</div>
+
+	<div id="player"></div>
+
+	<div id="controls">
+		<button id="tryPlay" style="display:none">Try Autoplay & Unmute</button>
+		<button id="muteToggle">Mute</button>
+	</div>
+
+	<p id="status"></p>
+
+	<div id="results"></div>
+
+	<script>
+		// Load the IFrame Player API code asynchronously.
+		var tag = document.createElement('script');
+		tag.src = "https://www.youtube.com/iframe_api";
+		document.head.appendChild(tag);
+
+		var player;
+		var pendingLoad;
+
+		function onYouTubeIframeAPIReady() {
+			player = new YT.Player('player', {
+				height: '540',
+				width: '960',
+				videoId: 'M7lc1UVf-VE',
+				playerVars: {
+					autoplay: 1,
+					controls: 0,
+					modestbranding: 1,
+					rel: 0,
+					playsinline: 1,
+					mute: 0
+				},
+				events: {
+					'onReady': function(){ setStatus('Player ready'); if(pendingLoad){loadYouTube(pendingLoad); pendingLoad=null;} attemptPlayUnmuted(); },
+					'onStateChange': function(e){ if(e.data === YT.PlayerState.PLAYING) setStatus('Playing'); if(e.data === YT.PlayerState.PAUSED) setStatus('Paused'); },
+					'onError': function(e){ setStatus('Player error: ' + e.data); }
+				}
+			});
+		}
+
+		function setStatus(s){ document.getElementById('status').textContent = s; }
+
+		function attemptPlayUnmuted() {
+			if(!player) return;
+			try {
+				player.unMute && player.unMute();
+				player.playVideo && player.playVideo();
+				setTimeout(function(){ if (player.getPlayerState && player.getPlayerState() !== YT.PlayerState.PLAYING) { setStatus('Autoplay with sound probably blocked; use the button to start playback.'); document.getElementById('tryPlay').style.display='inline-block'; } else setStatus('Playback started'); }, 900);
+			} catch (err){ setStatus('Autoplay attempt failed; use the button to start playback.'); document.getElementById('tryPlay').style.display='inline-block'; }
+		}
+
+		document.getElementById('tryPlay').addEventListener('click', function(){ if(!player) return; player.unMute && player.unMute(); player.playVideo && player.playVideo(); setStatus('Playback started via user gesture (unmuted).'); });
+		document.getElementById('muteToggle').addEventListener('click', function(){ if(!player) return; if(player.isMuted && player.isMuted()){ player.unMute && player.unMute(); this.textContent='Mute'; setStatus('Unmuted'); } else { player.mute && player.mute(); this.textContent='Unmute'; setStatus('Muted'); } });
+
+		// TMDB helpers
+		var TMDB_BASE = 'https://api.themoviedb.org/3';
+
+		document.getElementById('fetchMovies').addEventListener('click', function(){ fetchTMDB('movie'); });
+		document.getElementById('fetchTV').addEventListener('click', function(){ fetchTMDB('tv'); });
+
+		// Load saved keys (or prefill with provided API key/token if present)
+		(function loadSaved(){
+			var keyInput = document.getElementById('tmdbKey');
+			var tokenInput = document.getElementById('tmdbToken');
+			keyInput.value = localStorage.getItem('tmdb_key') || '49787128da94b3585b21dac5c4a92fcc';
+			tokenInput.value = localStorage.getItem('tmdb_token') || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0OTc4NzEyOGRhOTRiMzU4NWIyMWRhYzVjNGE5MmZjYyIsIm5iZiI6MTc1NjQ0MjAwNi4zMjksInN1YiI6IjY4YjEyZDk2NmZkMmM0MTFiNjM5NmQ3MCIsInNjb3BlcyI6WyJhcGlfcmVhCJdLCJ2ZXJzaW9uIjoxfQ.MEjHIvjbtHuzHUTpnwyCK6gbNKB0xY4IpSL21OEVJSI';
+			keyInput.addEventListener('change', function(){ localStorage.setItem('tmdb_key', keyInput.value.trim()); });
+			tokenInput.addEventListener('change', function(){ localStorage.setItem('tmdb_token', tokenInput.value.trim()); });
+		})();
+
+		async function fetchTMDB(type){
+			var key = document.getElementById('tmdbKey').value.trim();
+			var token = document.getElementById('tmdbToken').value.trim();
+			if(!key && !token){ setStatus('Please enter your TMDB API key or Read Access Token'); return; }
+			setStatus('Fetching popular ' + (type==='movie' ? 'movies' : 'tv shows') + '...');
+			try{
+				var url = TMDB_BASE + '/' + (type==='movie' ? 'movie/popular' : 'tv/popular') + '?language=en-US&page=1';
+				if(key) url += '&api_key=' + encodeURIComponent(key);
+				var headers = {};
+				if(token) headers['Authorization'] = 'Bearer ' + token;
+				var res = await fetch(url, { headers: headers });
+				if(!res.ok) throw new Error('TMDB fetch failed ' + res.status);
+				var data = await res.json();
+				renderResults(data.results, type, key, token);
+				setStatus('Fetched ' + data.results.length + ' items');
+			}catch(err){ setStatus('Error fetching TMDB: ' + err.message); }
+		}
+
+		function renderResults(items, type, key, token){
+			var out = document.getElementById('results'); out.innerHTML='';
+			items.forEach(function(it){
+				var card = document.createElement('div'); card.className='card';
+				var title = document.createElement('div'); title.className='title'; title.textContent = it.title || it.name || 'Untitled';
+				var year = document.createElement('div'); year.style.fontSize='12px'; year.style.color='#666'; year.textContent = (it.release_date||it.first_air_date||'').slice(0,4);
+				var btn = document.createElement('button'); btn.textContent='Play Trailer'; btn.style.marginTop='8px';
+				btn.addEventListener('click', function(){ fetchVideosAndPlay(type, it.id, key, token); });
+				card.appendChild(title); card.appendChild(year); card.appendChild(btn);
+				out.appendChild(card);
+			});
+		}
+
+		async function fetchVideosAndPlay(type, id, key, token){
+			setStatus('Fetching videos for id ' + id + '...');
+			try{
+				var url = TMDB_BASE + '/' + (type==='movie' ? 'movie' : 'tv') + '/' + id + '/videos?language=en-US';
+				if(key) url += '&api_key=' + encodeURIComponent(key);
+				var headers = {};
+				if(token) headers['Authorization'] = 'Bearer ' + token;
+				var res = await fetch(url, { headers: headers });
+				if(!res.ok) throw new Error('Videos fetch failed ' + res.status);
+				var data = await res.json();
+				var yt = data.results.find(v => v.site === 'YouTube' && /trailer/i.test(v.type)) || data.results.find(v => v.site==='YouTube');
+				if(!yt){ setStatus('No YouTube trailer found for this item'); return; }
+				setStatus('Found YouTube video: ' + yt.name + ' → ' + yt.key);
+				loadYouTube(yt.key);
+			}catch(err){ setStatus('Error fetching videos: ' + err.message); }
+		}
+
+		function loadYouTube(key){
+			if(!player){ pendingLoad = key; setStatus('Player not ready yet — will load when ready'); return; }
+			try{
+				// Load video by id and attempt to unmute & autoplay
+				player.loadVideoById({videoId: key, startSeconds:0});
+				player.unMute && player.unMute();
+				player.playVideo && player.playVideo();
+				setStatus('Loading video ' + key);
+			}catch(err){ setStatus('Failed to load video: ' + err.message); }
+		}
+	</script>
+</body>
+</html>
+
