@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+	<title>TV Player - JStream</title>
+	<link rel="stylesheet" href="assets/css/style.css" />
+	<style>
+		.standalone-player-body{background:#000;color:#fff;font-family:system-ui,Arial,sans-serif;margin:0;display:flex;flex-direction:column;height:100vh}
+		.player-header-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.3),rgba(0,0,0,0));position:absolute;top:0;left:0;right:0;z-index:20;flex-wrap:wrap}
+		.player-header-bar .back-btn{background:rgba(255,255,255,.12);border:none;color:#fff;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;border-radius:4px;cursor:pointer}
+		.player-header-bar .back-btn:hover{background:rgba(255,255,255,.25)}
+		.player-wrapper{flex:1;display:flex;align-items:center;justify-content:center;padding:0 0 18px}
+		.ratio-box{position:relative;width:100%;height:100%}
+		.ratio-box iframe{position:absolute;top:0;left:0;width:100%;height:100%;background:#000}
+		.meta-footer{background:#0f0f0f;padding:12px 18px;font-size:14px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;position:relative;z-index:10}
+		.meta-footer .title{font-weight:600;font-size:16px}
+		.progress-indicator{margin-left:auto;opacity:.75}
+		.loading-msg{color:#bbb;font-size:14px;margin-left:8px}
+		/* Dropup styles */
+		.dropup-group{position:relative;display:flex;flex-direction:column-reverse;align-items:flex-start}
+		.dropup-toggle{background:#1b1b1b;color:#fff;border:1px solid #333;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;min-width:90px}
+		.dropup-toggle:focus{outline:2px solid #e50914;outline-offset:2px}
+		.dropup-menu{position:absolute;bottom:110%;left:0;background:#141414;border:1px solid #333;max-height:260px;overflow-y:auto;list-style:none;margin:0;padding:4px 0;min-width:150px;border-radius:6px;box-shadow:0 8px 18px -6px rgba(0,0,0,.6);display:none}
+		.dropup-menu.show{display:block;animation:fadeUp .16s ease-out}
+		.dropup-menu li{padding:6px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+		.dropup-menu li:hover,.dropup-menu li.active{background:#262626}
+		.episode-selectors{display:flex;gap:10px;align-items:flex-end}
+		@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+	</style>
+</head>
+<body class="standalone-player-body">
+	<div class="player-header-bar">
+		<button class="back-btn" onclick="history.back()" aria-label="Back"><span style="font-size:20px;line-height:1">←</span><span>Back</span></button>
+		<div class="title" id="seriesTitle">Loading…</div>
+		<div class="loading-msg" id="loadingMsg">Initializing…</div>
+		<button class="back-btn" style="margin-left:auto" onclick="window._refreshPlayer && window._refreshPlayer()" aria-label="Refresh Player"><span style="font-size:16px;line-height:1">⟳</span><span>Refresh Player</span></button>
+	</div>
+	<div class="player-wrapper"><div class="ratio-box" id="iframeHost"></div></div>
+	<div class="meta-footer">
+			<div class="title" id="episodeTitle">Episode</div>
+			<div id="airDate"></div>
+			<div id="ratingInfo"></div>
+			<div class="episode-selectors" id="episodeSelectors">
+				<div class="dropup-group" id="seasonDrop">
+					<button class="dropup-toggle" id="seasonToggle" aria-haspopup="listbox" aria-expanded="false">Season 1 ▴</button>
+					<ul class="dropup-menu" id="seasonMenu" role="listbox" aria-label="Select season"></ul>
+				</div>
+				<div class="dropup-group" id="episodeDrop">
+					<button class="dropup-toggle" id="episodeToggle" aria-haspopup="listbox" aria-expanded="false">Episode 1 ▴</button>
+					<ul class="dropup-menu" id="episodeMenu" role="listbox" aria-label="Select episode"></ul>
+				</div>
+			</div>
+			<div class="progress-indicator" id="progressInfo" hidden></div>
+	</div>
+	<script src="assets/js/api.js"></script>
+	<script src="assets/js/player-utils.js"></script>
+	<script>
+	(async function(){
+		const q = JStreamPlayerUtils.parseQuery();
+		const id = q.id; if(!id){ document.getElementById('seriesTitle').textContent='Missing tv id'; return; }
+		const tmdbId = id;
+		let season = parseInt(q.season||'1',10);
+		let episode = parseInt(q.episode||'1',10);
+		let show = null; let currentSeasonEpisodes = [];
+		let playbackStarted = false; // guard to prevent duplicate embeds
+
+		const seasonToggle = document.getElementById('seasonToggle');
+		const episodeToggle = document.getElementById('episodeToggle');
+		const seasonMenu = document.getElementById('seasonMenu');
+		const episodeMenu = document.getElementById('episodeMenu');
+
+		const contentKey = () => `tv-${tmdbId}-s${season}e${episode}`;
+
+		try {
+			show = await window.tmdb.getTVShowDetails(tmdbId);
+			document.getElementById('seriesTitle').textContent = show.name;
+			// Start playback immediately (autoplay S1E1 or requested query) without waiting for season data
+			console.log('[DEBUG] Starting immediate playback for S' + season + 'E' + episode);
+			startPlaybackMaybe();
+			buildSeasonMenu(show);
+			await loadSeason(season);
+		} catch(e){ 
+			console.warn('Show details failed', e); 
+			// Even if show details fail, attempt playback
+			console.log('[DEBUG] Show details failed, attempting playback anyway');
+			startPlaybackMaybe();
+		}
+
+		function buildSeasonMenu(show){
+			const seasons = (show.seasons||[]).filter(s=> s.season_number>0);
+			seasonMenu.innerHTML = seasons.map(s=>`<li data-season="${s.season_number}" role="option">Season ${s.season_number}</li>`).join('');
+			markActive(seasonMenu, season);
+			seasonToggle.textContent = `Season ${season} ▴`;
+		}
+
+		async function loadSeason(seasonNumber){
+			const data = await window.tmdb.getTVSeasonDetails(tmdbId, seasonNumber).catch(()=>null);
+			currentSeasonEpisodes = data?.episodes || [];
+			buildEpisodeMenu();
+			// reset episode to 1 if not present
+			if(!currentSeasonEpisodes.find(e=> e.episode_number===episode)) episode = 1;
+			episodeToggle.textContent = `Episode ${episode} ▴`;
+			// Playback may have already started; ensure metadata updates if already playing
+			updateEpisodeMeta();
+		}
+
+		function buildEpisodeMenu(){
+			episodeMenu.innerHTML = currentSeasonEpisodes.map(ep=>`<li data-ep="${ep.episode_number}" role="option">E${ep.episode_number}: ${(ep.name||'Untitled').replace(/</g,'&lt;')}</li>`).join('');
+			markActive(episodeMenu, episode, 'ep');
+		}
+
+		function markActive(menu, value, attr='season'){
+			[...menu.children].forEach(li=> li.classList.toggle('active', parseInt(li.dataset[attr])===value));
+		}
+
+		function toggleMenu(menuEl, toggleBtn){
+			const open = !menuEl.classList.contains('show');
+			closeAllMenus();
+			if(open){ menuEl.classList.add('show'); toggleBtn.setAttribute('aria-expanded','true'); }
+			else { menuEl.classList.remove('show'); toggleBtn.setAttribute('aria-expanded','false'); }
+		}
+
+		function closeAllMenus(){
+			[seasonMenu, episodeMenu].forEach(m=>{ m.classList.remove('show'); });
+			[seasonToggle, episodeToggle].forEach(b=> b.setAttribute('aria-expanded','false'));
+		}
+
+		seasonToggle.addEventListener('click', ()=> toggleMenu(seasonMenu, seasonToggle));
+		episodeToggle.addEventListener('click', ()=> toggleMenu(episodeMenu, episodeToggle));
+
+		seasonMenu.addEventListener('click', async (e)=>{
+			const li = e.target.closest('li[data-season]'); if(!li) return;
+			season = parseInt(li.dataset.season,10); markActive(seasonMenu, season); seasonToggle.textContent = `Season ${season} ▴`; closeAllMenus();
+			await loadSeason(season); episode = 1; episodeToggle.textContent = `Episode ${episode} ▴`; markActive(episodeMenu, episode, 'ep');
+			// Auto-play first episode of new season
+			startPlayback(0, true);
+		});
+
+		episodeMenu.addEventListener('click', (e)=>{
+			const li = e.target.closest('li[data-ep]'); if(!li) return;
+			episode = parseInt(li.dataset.ep,10); markActive(episodeMenu, episode, 'ep'); episodeToggle.textContent = `Episode ${episode} ▴`; closeAllMenus();
+			// Auto-play selected episode
+			startPlayback(0, true);
+		});
+
+		// Load button removed: playback is automatic on selection.
+
+		document.addEventListener('click', (e)=>{ if(!e.target.closest('.dropup-group')) closeAllMenus(); });
+		document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeAllMenus(); });
+
+		function startPlaybackMaybe(){
+			console.log('[DEBUG] startPlaybackMaybe called, playbackStarted:', playbackStarted);
+			if(playbackStarted) {
+				console.log('[DEBUG] Playback already started, skipping');
+				return;
+			}
+			playbackStarted = true;
+			console.log('[DEBUG] Setting playbackStarted to true, initiating playback');
+			const saved = JStreamPlayerUtils.loadProgress(contentKey());
+			const resumeAllowed = saved && saved.progress < 95 && saved.currentTime>0;
+			const startAt = resumeAllowed? saved.currentTime : 0;
+			console.log('[DEBUG] Starting playback at time:', startAt);
+			startPlayback(startAt);
+		}
+
+		function startPlayback(startTime=0, forceRestart=false){
+			console.log('[DEBUG] startPlayback called with startTime:', startTime, 'forceRestart:', forceRestart);
+			const host = document.getElementById('iframeHost');
+			host.innerHTML='';
+			let attempt = 0; let loaded=false; const attemptToken = Date.now(); startPlayback._token = attemptToken;
+			const opts = { autoPlay:true };
+			if(startTime>0 && !forceRestart) opts.progress = Math.floor(startTime);
+			const query = new URLSearchParams({...opts, autoplay:1}).toString();
+			console.log('[DEBUG] Embed query params:', query);
+			const basePatterns = [
+				`https://www.vidking.net/embed/tv/${tmdbId}/${season}/${episode}`,
+				`https://vidking.net/embed/tv/${tmdbId}/${season}/${episode}`,
+				`https://www.vidking.net/embed/tv/${tmdbId}?season=${season}&episode=${episode}`,
+				`https://vidking.net/embed/tv/${tmdbId}?season=${season}&episode=${episode}`,
+				`https://www.vidking.net/embed/series/${tmdbId}/${season}/${episode}`,
+				`https://vidking.net/embed/series/${tmdbId}/${season}/${episode}`
+			];
+			let lastSrc='';
+			const statusEl = document.getElementById('loadingMsg');
+			const guidance = () => {
+				statusEl.innerHTML = `Playback unavailable.<br><small style=\"opacity:.75\">If this page is opened via file:// the provider may block it. Serve locally (e.g. python -m http.server) and use http://localhost or <a href='${lastSrc}' target='_blank' style='color:#e50914'>open embed</a>.</small>`;
+			};
+			function next(){
+				if(startPlayback._token !== attemptToken) return;
+				if(attempt >= basePatterns.length){ if(!loaded){ guidance(); } return; }
+				const raw = basePatterns[attempt];
+				const src = query? (raw + (raw.includes('?')? '&':'?') + query) : raw;
+				attempt++;
+				console.log('[DEBUG] Attempting embed:', src);
+				host.innerHTML='';
+				const iframe = document.createElement('iframe');
+				iframe.src = src; lastSrc = src;
+				iframe.allowFullscreen = true; iframe.setAttribute('allowfullscreen',''); iframe.setAttribute('frameborder','0'); iframe.setAttribute('allow','autoplay; fullscreen; picture-in-picture'); iframe.style.background='#000'; iframe.className='player-iframe';
+				statusEl.textContent = `Loading S${season}E${episode}… (Attempt ${attempt}/${basePatterns.length})`;
+				host.appendChild(iframe);
+				updateEpisodeMeta();
+				let timeout = setTimeout(()=>{ if(!loaded){ console.log('[DEBUG] Timeout reached, trying next pattern'); next(); } }, 4000);
+				iframe.addEventListener('error', ()=>{ console.log('[DEBUG] Iframe error, trying next'); if(!loaded) next(); });
+				iframe.addEventListener('load', ()=>{
+					console.log('[DEBUG] Iframe loaded');
+					if(startPlayback._token !== attemptToken) return;
+					setTimeout(()=>{ if(loaded) return; loaded=true; clearTimeout(timeout); statusEl.textContent=''; setupProgressTracking(iframe, startTime); console.log('[DEBUG] Playback setup complete'); }, 250);
+				});
+			}
+			next();
+		}
+
+		function updateEpisodeMeta(){
+			document.getElementById('episodeTitle').textContent = `S${season}E${episode}`;
+		}
+
+		function setupProgressTracking(iframe,startTime){
+			const saved = JStreamPlayerUtils.loadProgress(contentKey());
+			window._refreshPlayer = function(){
+				const currentSaved = JStreamPlayerUtils.loadProgress(contentKey());
+				const resumeAllowed = currentSaved && currentSaved.progress < 95 && currentSaved.currentTime>0;
+				startPlayback(resumeAllowed? currentSaved.currentTime:0, true);
+			};
+			window.addEventListener('message',(ev)=>{
+				if(ev.origin !== 'https://www.vidking.net') return;
+				try {
+					const data = JSON.parse(ev.data);
+					if(data.type==='progressUpdate' && data.currentTime){
+						const duration = data.duration || 0;
+						const progress = duration? (data.currentTime/duration)*100 : 0;
+						const progressObj = { id: tmdbId, tmdbId, mediaType:'tv', title: show? show.name : 'TV Show', season, episode, currentTime: data.currentTime, duration, progress, timestamp: Date.now(), lastWatched:new Date().toISOString() };
+						JStreamPlayerUtils.saveProgress(contentKey(), progressObj);
+						const pInfo = document.getElementById('progressInfo'); pInfo.hidden=false; pInfo.textContent = `${Math.round(progress)}%`;
+					}
+				} catch(e){}
+			});
+			if(startTime>0){
+				const pInfo = document.getElementById('progressInfo'); pInfo.hidden=false; pInfo.textContent = `${Math.round((startTime/(saved?.duration||1))*100)}%`;
+			}
+		}
+	})();
+	</script>
+</body>
+</html>

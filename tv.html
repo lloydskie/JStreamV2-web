@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TV • JStream</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    <!-- Favicon set -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="favicon_io/favicon.ico">
+</head>
+<body class="tv-page">
+        <header class="header">
+            <nav class="navbar">
+                <div class="nav-brand">
+                    <a href="https://lloydskie.pages.dev/" class="logo" target="_blank" rel="noopener noreferrer">JStream</a>
+                </div>
+                <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileMenu()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="nav-link">Home</a></li>
+                    <li><a href="tv.html" class="nav-link active">TV Shows</a></li>
+                    <li><a href="movie.html" class="nav-link">Movies</a></li>
+                    <li><a href="search.html" class="nav-link">New & Popular</a></li>
+                    <li><a href="creator.html" class="nav-link">Creator</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <div class="search-container">
+                        <button class="search-btn" aria-label="Search" onclick="toggleSearch()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </button>
+                        <input id="searchInput" type="text" class="search-input" placeholder="Search titles, people, genres" onkeyup="handleSearchInput(event)">
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+    <section class="show-hero" id="showHero">
+        <div class="hero-bg" id="heroBg"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content-wrapper">
+            <div class="hero-meta-block">
+                <h1 id="showTitle" class="show-title">Loading...</h1>
+                <div class="show-inline-meta" id="inlineMeta"></div>
+                <div class="genre-pills" id="genrePills"></div>
+                <p id="showOverview" class="show-overview">Loading description…</p>
+                <div class="hero-actions">
+                    <button id="playPrimary" class="btn btn-primary hero-play">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <span id="playPrimaryLabel">Play</span>
+                    </button>
+                    <button class="circle-btn" id="episodesScroll" title="Episodes"><span>Episodes</span></button>
+                    <button class="circle-btn" id="similarScroll" title="Similar"><span>Similars</span></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="show-main">
+        <section class="episodes-section" id="episodesSection">
+            <div class="section-head">
+                <h2>Episodes</h2>
+                <div class="ep-tools">
+                    <select id="seasonSelect" class="season-select" aria-label="Select season"></select>
+                    <div class="episode-search-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zM9.5 14C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <input type="text" id="episodeSearch" placeholder="Search episode..." />
+                    </div>
+                </div>
+            </div>
+            <div class="episodes-scroll" id="episodesList" aria-label="Episode list"></div>
+        </section>
+
+        <section class="cast-wrapper" id="castSection">
+            <h2>Actors</h2>
+            <div class="actor-grid" id="castGrid"></div>
+        </section>
+
+        <section class="similar-wrapper" id="similarSection">
+            <h2>You may like</h2>
+            <div class="similar-grid modern" id="similarGrid"></div>
+        </section>
+    </main>
+
+    <!-- Modal player removed: using standalone tv-player.html -->
+
+    <div class="loading-spinner" id="loadingSpinner" hidden><div class="spinner"></div></div>
+
+    <!-- Mobile Bottom Navigation & Overlay -->
+    <nav class="mobile-bottom-nav" aria-label="Primary mobile navigation">
+        <button class="mbn-item" data-nav="home" aria-label="Home" onclick="mbNav.go('index.html')">
+            <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke-linejoin="round"/></svg>
+            <span>Home</span>
+        </button>
+        <button class="mbn-item" data-nav="search" aria-label="Search" onclick="mbNav.search()">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>Search</span>
+        </button>
+        <button class="mbn-item" data-nav="menu" aria-label="All Sections" onclick="mbNav.toggleMenu()">
+            <svg viewBox="0 0 24 24"><path d="M3 5h6v6H3zM9 13H3v6h6zm2-8h10v2H11zm0 6h10v2H11zm0 6h10v2H11z"/></svg>
+            <span>Menu</span>
+        </button>
+    </nav>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" aria-hidden="true">
+        <div class="mobile-menu-panel" role="dialog" aria-modal="true" aria-label="JStream sections">
+            <button class="mobile-menu-close" aria-label="Close menu" onclick="mbNav.toggleMenu(false)">
+                <svg width="22" height="22" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" stroke="#bbb" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <ul class="mobile-menu-grid">
+                <li><a href="index.html" data-link="home">Home</a></li>
+                <li><a href="tv.html" data-link="tv">TV Shows</a></li>
+                <li><a href="movie.html" data-link="movies">Movies</a></li>
+                <li><a href="search.html" data-link="new">New & Popular</a></li>
+                <li><a href="creator.html" data-link="creator">Creator</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <!-- player.js removed: standalone player pages used globally -->
+    <script src="assets/js/person-modal.js"></script>
+    <script>
+        // Fallbacks if global helpers not present
+        if(typeof handleSearchInput !== 'function'){
+            window.handleSearchInput = function(e){ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q) window.location.href=`search.html?q=${encodeURIComponent(q)}`; }};
+        }
+        if(typeof toggleSearch !== 'function'){
+            window.toggleSearch = function(){ const sc=document.querySelector('.search-container'); const si=document.getElementById('searchInput'); if(sc){ sc.classList.toggle('active'); if(sc.classList.contains('active')&&si) si.focus(); }};
+        }
+        if(typeof toggleMobileMenu !== 'function'){
+            window.toggleMobileMenu = function(){ const navMenu=document.querySelector('.nav-menu'); const navToggle=document.querySelector('.nav-toggle'); if(navMenu&&navToggle){ navMenu.classList.toggle('active'); navToggle.classList.toggle('active'); }};
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const tvId = urlParams.get('id');
+        let fullEpisodes=[]; let currentSeason=1; let currentShow=null;
+
+        const heroBg = document.getElementById('heroBg');
+        const showTitleEl = document.getElementById('showTitle');
+        const overviewEl = document.getElementById('showOverview');
+        const inlineMetaEl = document.getElementById('inlineMeta');
+        const genrePillsEl = document.getElementById('genrePills');
+        const seasonSelect = document.getElementById('seasonSelect');
+        const episodesList = document.getElementById('episodesList');
+        const episodeSearch = document.getElementById('episodeSearch');
+        const playPrimary = document.getElementById('playPrimary');
+        const episodesScrollBtn = document.getElementById('episodesScroll');
+        const similarScrollBtn = document.getElementById('similarScroll');
+
+        // If no specific TV show id is provided, stay on this page and show a browse grid (no redirection)
+        if(!tvId){
+            initBrowseMode();
+        } else {
+            loadShow(tvId);
+        }
+
+        // Initialize browse mode (popular TV shows) when no id param
+        async function initBrowseMode(){
+            try {
+                const data = await getPopularTV();
+                buildBrowseSection();
+                if(data && data.results){
+                    buildBrowseGrid(data.results);
+                    // Auto-load first show to populate hero (optional UX)
+                    if(data.results[0]){
+                        await loadShow(data.results[0].id);
+                        highlightBrowseShow(data.results[0].id);
+                    }
+                }
+            } catch(err){
+                console.error('Failed to load popular TV shows for browse mode', err);
+                buildBrowseSection('Failed to load popular TV shows.');
+            }
+        }
+
+        function buildBrowseSection(errorMessage){
+            if(document.getElementById('browseSection')) return; // already built
+            const main = document.querySelector('.show-main');
+            if(!main) return;
+            const section = document.createElement('section');
+            section.className = 'browse-section';
+            section.id = 'browseSection';
+            section.innerHTML = `
+                <div class="section-head"><h2>Popular TV Shows</h2></div>
+                <div class="similar-grid modern" id="browseGrid">${errorMessage? `<div class='empty'>${errorMessage}</div>`:''}</div>
+            `;
+            main.prepend(section);
+        }
+
+        function buildBrowseGrid(list){
+            const grid = document.getElementById('browseGrid');
+            if(!grid) return;
+            if(!list.length){
+                grid.innerHTML = '<div class="empty">No shows available.</div>';
+                return;
+            }
+            grid.innerHTML = list.slice(0,24).map(item=>`<div class="sim-card" data-id="${item.id}">
+                <img src="${item.poster_path? getImageURL(item.poster_path,'w342'):'assets/placeholder.png'}" alt="${item.name}" loading="lazy"/>
+                <div class="sim-overlay"><h5>${item.name}</h5></div>
+            </div>`).join('');
+            grid.querySelectorAll('.sim-card').forEach(card=> card.addEventListener('click', ()=> {
+                const id = card.dataset.id;
+                // Reload the page with id param for clean state
+                window.location.href = `tv.html?id=${id}`;
+            }));
+        }
+
+        function highlightBrowseShow(id){
+            const grid = document.getElementById('browseGrid');
+            if(!grid) return;
+            grid.querySelectorAll('.sim-card').forEach(c=> c.classList.toggle('active', c.dataset.id == id));
+        }
+
+        async function loadShow(id){
+            try {
+                const data = await getTvDetails(id);
+                currentShow = data;
+                showTitleEl.textContent = data.name;
+                overviewEl.textContent = (data.overview || 'No description available.').slice(0,350);
+                heroBg.style.backgroundImage = data.backdrop_path ? `url(${getImageURL(data.backdrop_path,'w1280')})` : 'none';
+                inlineMetaEl.innerHTML = metaTemplate(data);
+                genrePillsEl.innerHTML = (data.genres||[]).slice(0,6).map(g=>`<span class="pill">${g.name}</span>`).join('');
+                buildSeasons(data.seasons||[]);
+                await loadSeason(id, currentSeason);
+                // Ensure primary play label reflects first episode
+                const firstSeason = currentSeason || 1;
+                document.getElementById('playPrimaryLabel').textContent = `Play S${firstSeason} E1`;
+                buildCast(data.credits?.cast||[]);
+                buildSimilar(data.similar?.results||[]);
+                if(!playPrimary.dataset.bound){
+                    playPrimary.addEventListener('click', ()=> playEpisode(1));
+                    playPrimary.dataset.bound='1';
+                }
+                episodesScrollBtn.addEventListener('click', ()=> document.getElementById('episodesSection').scrollIntoView({behavior:'smooth'}));
+                similarScrollBtn.addEventListener('click', ()=> document.getElementById('similarSection').scrollIntoView({behavior:'smooth'}));
+            } catch(e){ showTitleEl.textContent='Error loading show'; console.error(e); }
+        }
+
+        function metaTemplate(d){
+            const year = d.first_air_date? new Date(d.first_air_date).getFullYear():'';
+            return `<span>${year}</span><span class="rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e6b800"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>${(d.vote_average||0).toFixed(1)}</span><span>${d.number_of_seasons||0} Season${d.number_of_seasons>1?'s':''}</span><span>${d.number_of_episodes||0} Episodes</span>`;
+        }
+
+        function buildSeasons(seasons){
+            const regular = seasons.filter(s=>s.season_number>0);
+            const list = regular.length? regular: seasons;
+            seasonSelect.innerHTML = list.map(s=>`<option value="${s.season_number}">Season ${s.season_number}</option>`).join('');
+            currentSeason = list[0]? list[0].season_number:1;
+            seasonSelect.value=currentSeason;
+            seasonSelect.addEventListener('change', async e=>{ currentSeason = parseInt(e.target.value); await loadSeason(tvId, currentSeason); });
+        }
+
+        async function loadSeason(id, seasonNumber){
+            try {
+                const seasonData = await getTvSeasonDetails(id, seasonNumber);
+                fullEpisodes = seasonData.episodes||[];
+                renderEpisodes(fullEpisodes);
+                // Update play primary label
+                document.getElementById('playPrimaryLabel').textContent = `Play S${seasonNumber} E1`;
+            } catch(err){ episodesList.innerHTML='<div class="empty">Failed to load episodes.</div>'; }
+        }
+
+        function renderEpisodes(list){
+            const q = episodeSearch.value.trim().toLowerCase();
+            const filtered = q? list.filter(ep=> (ep.name||'').toLowerCase().includes(q) ): list;
+            episodesList.innerHTML = filtered.map(ep=>episodeCard(ep)).join('') || '<div class="empty">No episodes found.</div>';
+            episodesList.querySelectorAll('.episode-row').forEach(card=>{
+                card.addEventListener('click', ()=> playEpisode(parseInt(card.dataset.ep)) );
+            });
+        }
+
+        function episodeCard(ep){
+            const still = ep.still_path? getImageURL(ep.still_path,'w300'): 'assets/placeholder.png';
+            const ov = ep.overview? (ep.overview.length>160? ep.overview.slice(0,160)+'…': ep.overview) : 'No synopsis available.';
+            return `<div class="episode-row" data-ep="${ep.episode_number}">
+                <div class="thumb"><img src="${still}" alt="Episode ${ep.episode_number}" loading="lazy" onerror="this.src='assets/placeholder.png'"/></div>
+                <div class="ep-info"><div class="ep-head"><span class="ep-num">${ep.episode_number}</span><h3 class="ep-title">${ep.name||'Untitled'}</h3><span class="runtime">${ep.runtime? ep.runtime+'m':'—'}</span></div><p class="ep-overview">${ov}</p><div class="ep-meta"><span>Rating ${(ep.vote_average||0).toFixed(1)}</span>${ep.air_date? `<span>${ep.air_date}</span>`:''}</div></div>
+            </div>`;
+        }
+
+        episodeSearch.addEventListener('input', ()=> renderEpisodes(fullEpisodes));
+
+        function playEpisode(epNumber){
+            // Allow immediate navigation even if episodes not loaded yet
+            if(!fullEpisodes.length){
+                openPlayer(epNumber);
+                return;
+            }
+            const ep = fullEpisodes.find(e=> e.episode_number===epNumber);
+            if(!ep){
+                // Fallback: still open player
+                openPlayer(epNumber);
+                return;
+            }
+            openPlayer(epNumber);
+            highlightEpisode(epNumber);
+        }
+        function highlightEpisode(num){
+            episodesList.querySelectorAll('.episode-row').forEach(r=> r.classList.toggle('active', parseInt(r.dataset.ep)===num));
+        }
+
+        function openPlayer(epNumber){
+            window.location.href = `tv-player.html?id=${currentShow.id}&season=${currentSeason}&episode=${epNumber}`;
+        }
+
+        function buildCast(cast){
+            const grid = document.getElementById('castGrid');
+            grid.innerHTML = cast.slice(0,12).map(p=>`<div class="actor-card" tabindex="0" data-person-id="${p.id}" onclick="showPersonDetails(${p.id})"><div class="actor-img"><img src="${p.profile_path? getImageURL(p.profile_path,'w185'):'assets/placeholder.png'}" alt="${p.name}" loading="lazy" onerror="this.src='assets/placeholder.png'"/></div><div class="actor-meta"><h4>${p.name}</h4><p>${p.character||''}</p></div></div>`).join('');
+        }
+
+        function buildSimilar(list){
+            const grid = document.getElementById('similarGrid');
+            if(!list.length){ grid.innerHTML='<div class="empty">No similar shows.</div>'; return; }
+            grid.innerHTML = list.slice(0,18).map(item=>`<div class="sim-card" data-id="${item.id}"><img src="${item.poster_path? getImageURL(item.poster_path,'w342'):'assets/placeholder.png'}" alt="${item.name}" loading="lazy"/><div class="sim-overlay"><h5>${item.name}</h5></div></div>`).join('');
+            grid.querySelectorAll('.sim-card').forEach(card=> card.addEventListener('click', ()=> { window.location.href = `tv.html?id=${card.dataset.id}`; }));
+        }
+        </script>
+        <script>
+            window.mbNav = window.mbNav || (function(){
+                const overlay = ()=> document.getElementById('mobileMenuOverlay');
+                const items = ()=> document.querySelectorAll('.mobile-bottom-nav .mbn-item');
+                function setActive(){
+                    const path=location.pathname.split('/').pop();
+                        items().forEach(btn=>{ const key=btn.dataset.nav; let act=false; if(key==='home'&&(path===''||path==='index.html')) act=true; else if(key==='menu'&&overlay().classList.contains('active')) act=true; btn.classList.toggle('active',act); });
+                        document.querySelectorAll('.mobile-menu-grid a').forEach(a=> a.classList.toggle('active', a.getAttribute('href')===path));
+                }
+                function go(u){ location.href=u; }
+                function search(){
+                    const path=location.pathname.split('/').pop();
+                    if(path !== 'search.html'){
+                        try{ sessionStorage.setItem('jstream:focusSearch','1'); }catch(e){}
+                        location.href='search.html';
+                        return;
+                    }
+                    const sc=document.querySelector('.search-container');
+                    if(sc && !sc.classList.contains('active')){ const b=sc.querySelector('.search-btn'); if(b) b.click(); }
+                    const i=document.getElementById('searchInput');
+                    if(i){ i.focus(); i.scrollIntoView({behavior:'smooth',block:'center'}); }
+                    toggleMenu(false); setActive();
+                }
+                function toggleMenu(force){ const ov=overlay(); if(!ov) return; const willOpen= typeof force==='boolean'? force: !ov.classList.contains('active'); ov.classList.toggle('active', willOpen); document.body.classList.toggle('menu-open', willOpen); ov.setAttribute('aria-hidden', String(!willOpen)); if(willOpen){ setTimeout(()=>{ const first=ov.querySelector('.mobile-menu-grid a'); if(first) first.focus(); },60);} setActive(); }
+                document.addEventListener('click',e=>{ const ov=overlay(); if(!ov) return; if(ov.classList.contains('active') && e.target===ov){ toggleMenu(false); }});
+                document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleMenu(false); });
+                document.addEventListener('click',e=>{ const link=e.target.closest('.mobile-menu-grid a'); if(!link) return; toggleMenu(false); });
+                window.addEventListener('pageshow', setActive); document.addEventListener('DOMContentLoaded', ()=>{ setActive(); try{ if(sessionStorage.getItem('jstream:focusSearch')==='1'){ sessionStorage.removeItem('jstream:focusSearch'); const i=document.getElementById('searchInput'); if(i){ const sc=i.closest('.search-container'); if(sc && !sc.classList.contains('active')){ const b=sc.querySelector('.search-btn'); if(b) b.click(); } i.focus(); } } }catch(e){} });
+                return { go, search, toggleMenu };
+            })();
+    </script>
+    <script src="assets/js/mobile-header.js"></script>
+</body>
+</html>

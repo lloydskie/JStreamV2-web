@@ -1,0 +1,113 @@
+{
+  "movies": [
+    {
+      "id": "m001",
+      "title": "Midnight Drift",
+      "year": 2023,
+      "rating": "PG-13",
+      "duration": "2h 3m",
+      "genres": ["Thriller", "Action"],
+      "description": "A high-stakes chase through neon cityscapes after a heist goes wrong.",
+      "backdrop": "assets/hero-midnight.jpg",
+      "poster": "assets/poster-midnight.jpg",
+      "featured": true,
+      "tmdbId": "1078605",
+      "mediaType": "movie"
+    },
+    {
+      "id": "t001",
+      "title": "Neon Nights",
+      "year": 2022,
+      "genres": ["Sci-Fi", "Drama"],
+      "description": "A serialized cyberpunk show exploring the underbelly of a futuristic city.",
+      "poster": "assets/poster-neon.jpg",
+      "tmdbId": "119051",
+      "mediaType": "tv",
+      "defaultSeason": 1,
+      "defaultEpisode": 1,
+      "seasonsCount": 3
+    },
+    {
+      "id": "m002",
+      "title": "Solaris Rising",
+      "year": 2024,
+      "rating": "R",
+      "duration": "1h 50m",
+      "genres": ["Sci-Fi", "Drama"],
+      "description": "A lone astronaut uncovers secrets on a distant planet.",
+      "backdrop": "assets/hero-solaris.jpg",
+      "poster": "assets/poster-solaris.jpg",
+      "featured": false,
+      "tmdbId": "1087654",
+      "mediaType": "movie"
+    },
+    {
+      "id": "m003",
+      "title": "Echoes of Tomorrow",
+      "year": 2022,
+      "rating": "PG",
+      "duration": "1h 45m",
+      "genres": ["Adventure", "Family"],
+      "description": "A young girl discovers a portal to a magical world.",
+      "backdrop": "assets/hero-echoes.jpg",
+      "poster": "assets/poster-echoes.jpg",
+      "featured": false
+    },
+    {
+      "id": "m004",
+      "title": "Crimson Tide",
+      "year": 2021,
+      "rating": "PG-13",
+      "duration": "2h 10m",
+      "genres": ["Action", "War"],
+      "description": "A submarine crew faces impossible choices during a mission.",
+      "backdrop": "assets/hero-crimson.jpg",
+      "poster": "assets/poster-crimson.jpg",
+      "featured": false
+    },
+    {
+      "id": "m005",
+      "title": "Lunar Dreams",
+      "year": 2020,
+      "rating": "G",
+      "duration": "1h 30m",
+      "genres": ["Animation", "Fantasy"],
+      "description": "A young boy embarks on a journey to save the moon.",
+      "backdrop": "assets/hero-lunar.jpg",
+      "poster": "assets/poster-lunar.jpg",
+      "featured": false
+    },
+    {
+      "id": "m006",
+      "title": "Neon Shadows",
+      "year": 2023,
+      "rating": "R",
+      "duration": "2h 15m",
+      "genres": ["Crime", "Thriller"],
+      "description": "A detective unravels a conspiracy in the underworld of a futuristic city.",
+      "backdrop": "assets/hero-neon.jpg",
+      "poster": "assets/poster-neon.jpg",
+      "featured": false
+    },
+    {
+      "id": "1",
+      "tmdbId": "12345",
+      "title": "Sample Movie",
+      "mediaType": "movie",
+      "year": 2025,
+      "poster": "sample-movie-poster.jpg",
+      "defaultSeason": null,
+      "defaultEpisode": null
+    },
+    {
+      "id": "2",
+      "tmdbId": "67890",
+      "title": "Sample TV Show",
+      "mediaType": "tv",
+      "year": 2025,
+      "poster": "sample-tv-poster.jpg",
+      "defaultSeason": 1,
+      "defaultEpisode": 1
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Movie Player - JStream</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .standalone-player-body {
+            background: #000;
+            color: #fff;
+            font-family: system-ui, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh
+        }
+
+        .player-header-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, .85), rgba(0, 0, 0, .3), rgba(0, 0, 0, 0));
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20
+        }
+
+        .player-header-bar .back-btn {
+            background: rgba(255, 255, 255, .12);
+            border: none;
+            color: #fff;
+            padding: 6px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 4px;
+            cursor: pointer
+        }
+
+        .player-header-bar .back-btn:hover {
+            background: rgba(255, 255, 255, .25)
+        }
+        .player-header-bar .refresh-btn {
+            background: rgba(255,255,255,.12);
+            border: none;
+            color: #fff;
+            padding: 6px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: auto;
+            font: inherit;
+        }
+        .player-header-bar .refresh-btn:hover { background: rgba(255,255,255,.25); }
+
+        .player-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0 18px
+        }
+
+        .ratio-box {
+            position: relative;
+            width: 100%;
+            height: 100%
+        }
+
+        .ratio-box iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000
+        }
+
+        .meta-footer {
+            background: #0f0f0f;
+            padding: 12px 18px;
+            font-size: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: center
+        }
+
+        .meta-footer .title {
+            font-weight: 600;
+            font-size: 16px
+        }
+
+        .progress-indicator {
+            margin-left: auto;
+            opacity: .75
+        }
+
+        .loading-msg {
+            color: #bbb;
+            font-size: 14px;
+            margin-left: 8px
+        }
+    </style>
+</head>
+
+<body class="standalone-player-body">
+    <div class="player-header-bar"><button class="back-btn" onclick="history.back()" aria-label="Back"><span
+                style="font-size:20px;line-height:1">←</span><span>Back</span></button><button class="refresh-btn" onclick="window._refreshPlayer && window._refreshPlayer()" aria-label="Refresh Player"><span style="font-size:16px;line-height:1">⟳</span><span>Refresh Player</span></button>
+    </div>
+    <div class="player-wrapper">
+        <div class="ratio-box" id="iframeHost"></div>
+    </div>
+    <div class="meta-footer">
+        <div class="title" id="movieTitle">Movie</div>
+        <div id="movieYear"></div>
+        <div id="movieInfo"></div>
+        <div class="progress-indicator" id="progressInfo" hidden></div>
+    </div>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/player-utils.js"></script>
+    <script>(async function () { const q = JStreamPlayerUtils.parseQuery(); const id = q.id; if (!id) { return; } const tmdbId = id; let details = null; try { details = await window.tmdb.getMovieDetails(tmdbId); document.getElementById('movieTitle').textContent = details.title; document.getElementById('movieYear').textContent = (details.release_date || '').slice(0, 4); document.getElementById('movieInfo').textContent = (details.runtime ? details.runtime + 'm • ' : '') + (details.vote_average ? details.vote_average.toFixed(1) + '/10' : ''); } catch (e) { console.warn('Details failed', e); } const contentKey = 'movie-' + tmdbId; function getResumeStart(){ const saved = JStreamPlayerUtils.loadProgress(contentKey); const resumeAllowed = saved && saved.progress < 95 && saved.currentTime > 0; return resumeAllowed ? saved.currentTime : 0; } startPlayback(getResumeStart()); window._refreshPlayer = function(){ startPlayback(getResumeStart()); }; function startPlayback(startTime = 0) { const host = document.getElementById('iframeHost'); host.innerHTML = ''; const opts = { autoPlay: true }; if (startTime > 0) opts.progress = Math.floor(startTime); const src = JStreamPlayerUtils.embedMovie(tmdbId, opts); const iframe = document.createElement('iframe'); iframe.src = src; iframe.allowFullscreen = true; iframe.setAttribute('allowfullscreen', ''); iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture'); iframe.setAttribute('frameborder', '0'); iframe.style.background = '#000'; iframe.className = 'player-iframe'; host.appendChild(iframe); setupProgressTracking(iframe, startTime); } function setupProgressTracking(iframe, startTime) { window.addEventListener('message', (ev) => { if (ev.origin !== 'https://www.vidking.net') return; try { const data = JSON.parse(ev.data); if (data.type === 'progressUpdate' && data.currentTime) { const duration = data.duration || 0; const progress = duration ? (data.currentTime / duration) * 100 : 0; const progressObj = { id: tmdbId, tmdbId: tmdbId, mediaType: 'movie', title: details ? details.title : 'Movie', currentTime: data.currentTime, duration, progress, posterPath: details ? details.poster_path : null, backdropPath: details ? details.backdrop_path : null, timestamp: Date.now(), lastWatched: new Date().toISOString() }; JStreamPlayerUtils.saveProgress(contentKey, progressObj); const pInfo = document.getElementById('progressInfo'); pInfo.hidden = false; pInfo.textContent = `${Math.round(progress)}%`; } } catch (e) { } }); if (startTime > 0) { const saved = JStreamPlayerUtils.loadProgress(contentKey); const pInfo = document.getElementById('progressInfo'); pInfo.hidden = false; pInfo.textContent = `${Math.round((startTime / (saved?.duration || 1)) * 100)}%`; } } })();</script>
+</body>
+
+</html>

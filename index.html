@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JStream</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Favicon set -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="favicon_io/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <a href="https://lloydskie.pages.dev/" class="logo" target="_blank" rel="noopener noreferrer">JStream</a>
+            </div>
+            <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileMenu()">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link active">Home</a></li>
+                <li><a href="tv.html" class="nav-link">TV Shows</a></li>
+                <li><a href="movie.html" class="nav-link">Movies</a></li>
+                <li><a href="search.html" class="nav-link">New & Popular</a></li>
+                <li><a href="creator.html" class="nav-link">Creator</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div class="search-container" data-role="nav-search">
+                    <button class="search-btn" aria-label="Search" onclick="toggleSearch(this)" aria-expanded="false">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </button>
+                    <input type="text" class="search-input" placeholder="Search titles, people, genres" 
+                           onkeyup="handleSearchInput(event)" id="searchInput">
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section (Carousel) -->
+    <section class="hero" id="hero" aria-label="Featured content carousel">
+        <div class="hero-slides" id="heroSlides">
+            <div class="hero-slide active loading" aria-hidden="false">
+                <div class="hero-backdrop"><div class="hero-image skeleton-bg"></div></div>
+                <div class="hero-content">
+                    <div class="hero-info">
+                        <h1 class="hero-title">Loading...</h1>
+                        <p class="hero-description">Loading description...</p>
+                        <div class="hero-actions">
+                            <button class="btn btn-primary play-btn" data-action="play" disabled>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                Play
+                            </button>
+                            <button class="btn btn-secondary info-btn" data-action="info" disabled>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                More Info
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-carousel-controls" aria-hidden="false">
+            <button class="hero-nav hero-prev" aria-label="Previous slide">&#10094;</button>
+            <div class="hero-dots" id="heroDots" role="tablist" aria-label="Slide indicators"></div>
+            <button class="hero-nav hero-next" aria-label="Next slide">&#10095;</button>
+        </div>
+    </section>
+
+        <!-- Content Rows -->
+        <main class="main-content">
+                <!-- Continue Watching Section -->
+                <section class="category continue-watching-section" id="continueWatchingSection" style="display: none;">
+                        <div class="section-header">
+                            <h2>Continue Watching</h2>
+                        </div>
+                        <div class="row" id="continue-watching"></div>
+                </section>
+
+                <!-- Top 10 Section -->
+                <section class="category" id="top10Section">
+                        <div class="section-header">
+                            <h2>Top 10 Today</h2>
+                            <div class="section-sub">Across Movies & TV</div>
+                        </div>
+                        <div class="row number-row" id="top-10"></div>
+                </section>
+
+                <!-- Seasonal Spotlight -->
+                <section class="category seasonal" id="seasonalSpotlight">
+                        <div class="section-header">
+                            <h2 id="seasonalTitle">Spotlight Collection</h2>
+                            <div class="section-tabs small" id="seasonalTabs"></div>
+                        </div>
+                        <div class="row" id="seasonal-row"></div>
+                </section>
+
+                <!-- Trending Tabs -->
+                <section class="category" id="trendingSection">
+                        <div class="section-header">
+                            <h2>Trending</h2>
+                            <div class="section-tabs" id="trendingTabs">
+                                <button class="tab-btn active" data-tab="all">All</button>
+                                <button class="tab-btn" data-tab="movies">Movies</button>
+                                <button class="tab-btn" data-tab="tv">TV Shows</button>
+                            </div>
+                        </div>
+                        <div class="row" id="trending"></div>
+                </section>
+
+                <section class="category" id="popularMoviesSection">
+                        <div class="section-header">
+                            <h2>Popular Movies</h2>
+                            <div class="section-actions"><button class="mini-link" data-more="popular-movies">View All</button></div>
+                        </div>
+                        <div class="row" id="popular-movies"></div>
+                </section>
+
+                <section class="category" id="popularTvSection">
+                        <div class="section-header">
+                            <h2>Popular TV Shows</h2>
+                        </div>
+                        <div class="row" id="popular-tv"></div>
+                </section>
+
+                <section class="category" id="topRatedMoviesSection">
+                        <div class="section-header">
+                            <h2>Top Rated Movies</h2>
+                        </div>
+                        <div class="row" id="top-rated-movies"></div>
+                </section>
+
+                <section class="category" id="topRatedTvSection">
+                        <div class="section-header">
+                            <h2>Top Rated TV Shows</h2>
+                        </div>
+                        <div class="row" id="top-rated-tv"></div>
+                </section>
+
+                <section class="category" id="nowPlayingSection">
+                        <div class="section-header">
+                            <h2>Now Playing</h2>
+                        </div>
+                        <div class="row" id="now-playing"></div>
+                </section>
+
+                <section class="category" id="upcomingSection">
+                        <div class="section-header">
+                            <h2>Upcoming Movies</h2>
+                        </div>
+                        <div class="row" id="upcoming"></div>
+                </section>
+
+                <!-- Genres Carousel -->
+                <section class="category" id="genresSection">
+                        <div class="section-header">
+                            <h2>Genres</h2>
+                            <div class="section-tabs small" id="genreTabs"></div>
+                        </div>
+                        <div class="row" id="genre-row"></div>
+                </section>
+        </main>
+
+        <footer class="site-footer">
+            <div class="footer-inner">
+                <div class="brand-col">
+                    <h3 class="footer-logo">JStream</h3>
+                    <p class="tagline">Stream Freely, Privately, and Securely</p>
+                </div>
+                <!-- <div class="link-col">
+                    <h4>Browse</h4>
+                    <ul>
+                        <li><a href="#top10Section">Top 10</a></li>
+                        <li><a href="#popularMoviesSection">Movies</a></li>
+                        <li><a href="#popularTvSection">TV Shows</a></li>
+                        <li><a href="#genresSection">Genres</a></li>
+                    </ul>
+                </div> -->
+                <!-- <div class="link-col">
+                    <h4>Library</h4>
+                    <ul>
+                        <li><a href="#continueWatchingSection">Continue Watching</a></li>
+                        <li><a href="#nowPlayingSection">Now Playing</a></li>
+                        <li><a href="#upcomingSection">Upcoming</a></li>
+                        <li><a href="#topRatedMoviesSection">Top Rated</a></li>
+                    </ul>
+                </div> -->
+                <div class="meta-col">
+                    <small>&copy; <span id="yearCopy"></span> JStream. Made with ❤️ by lloydskie.</small>
+                </div>
+            </div>
+        </footer>
+
+    <!-- Player Modal -->
+    <div class="player-modal" id="playerModal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="player-container">
+            <button class="player-close" id="playerClose" aria-label="Close player">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+            <div class="player-header">
+                <h2 class="player-title" id="playerTitle">Movie Title</h2>
+                <div class="player-meta" id="playerMeta">Movie • 2023</div>
+            </div>
+            <div class="player-content">
+                <div class="resume-prompt" id="resumePrompt" hidden>
+                    <div class="resume-text" id="resumeText">Continue watching from where you left off?</div>
+                    <div class="resume-actions">
+                        <button class="btn btn-primary" id="resumeContinue">Continue</button>
+                        <button class="btn btn-secondary" id="resumeRestart">Start Over</button>
+                    </div>
+                </div>
+                <div class="iframe-container" id="iframeContainer">
+                    <!-- Player iframe will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner" hidden>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Mobile Bottom Navigation & Overlay -->
+    <nav class="mobile-bottom-nav" aria-label="Primary mobile navigation">
+        <button class="mbn-item" data-nav="home" aria-label="Home" onclick="mbNav.go('index.html')">
+            <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke-linejoin="round"/></svg>
+            <span>Home</span>
+        </button>
+        <button class="mbn-item" data-nav="search" aria-label="Search" onclick="mbNav.search()">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>Search</span>
+        </button>
+        <button class="mbn-item" data-nav="menu" aria-label="All Sections" onclick="mbNav.toggleMenu()">
+            <svg viewBox="0 0 24 24"><path d="M3 5h6v6H3zM9 13H3v6h6zm2-8h10v2H11zm0 6h10v2H11zm0 6h10v2H11z"/></svg>
+            <span>Menu</span>
+        </button>
+    </nav>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" aria-hidden="true">
+        <div class="mobile-menu-panel" role="dialog" aria-modal="true" aria-label="JStream sections">
+            <button class="mobile-menu-close" aria-label="Close menu" onclick="mbNav.toggleMenu(false)">
+                <svg width="22" height="22" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" stroke="#bbb" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <ul class="mobile-menu-grid">
+                <li><a href="index.html" data-link="home">Home</a></li>
+                <li><a href="tv.html" data-link="tv">TV Shows</a></li>
+                <li><a href="movie.html" data-link="movies">Movies</a></li>
+                <li><a href="search.html" data-link="new">New & Popular</a></li>
+                <li><a href="creator.html" data-link="creator">Creator</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/player.js"></script>
+    <script src="assets/js/app.js"></script>
+        <script>
+            // Mobile Bottom Nav Controller (shared inline for now; can be externalized if reused)
+            window.mbNav = (function(){
+                const overlay = ()=> document.getElementById('mobileMenuOverlay');
+                const items = ()=> document.querySelectorAll('.mobile-bottom-nav .mbn-item');
+                function setActive(){
+                    const path = location.pathname.split('/').pop();
+                    items().forEach(btn=>{
+                        const key = btn.dataset.nav;
+                        let active=false;
+                        if(key==='home' && (path===''||path==='index.html')) active=true;
+                        else if(key==='menu' && overlay().classList.contains('active')) active=true;
+                        btn.classList.toggle('active', active);
+                    });
+                    // Highlight active link inside menu grid
+                    document.querySelectorAll('.mobile-menu-grid a').forEach(a=>{
+                        const href = a.getAttribute('href');
+                        a.classList.toggle('active', href===path);
+                    });
+                }
+                function go(url){ window.location.href = url; }
+                        function search(){
+                            const path = location.pathname.split('/').pop();
+                            // If not on search page, navigate and set flag to focus input after load
+                            if(path !== 'search.html') {
+                                try { sessionStorage.setItem('jstream:focusSearch','1'); } catch(e){}
+                                location.href = 'search.html';
+                                return;
+                            }
+                            // Already on search page: open/focus existing field
+                            const sc = document.querySelector('.search-container');
+                            if(sc && !sc.classList.contains('active')){
+                                const btn = sc.querySelector('.search-btn'); if(btn) btn.click();
+                            }
+                                const input = document.getElementById('searchInput');
+                                if(input){ input.focus(); input.scrollIntoView({behavior:'smooth', block:'center'}); }
+                            toggleMenu(false);
+                            setActive();
+                        }
+                function toggleMenu(force){
+                    const ov = overlay(); if(!ov) return;
+                    const willOpen = typeof force==='boolean'? force : !ov.classList.contains('active');
+                    ov.classList.toggle('active', willOpen);
+                    document.body.classList.toggle('menu-open', willOpen);
+                    ov.setAttribute('aria-hidden', String(!willOpen));
+                    if(willOpen){
+                        // Focus first link
+                        setTimeout(()=>{ const first = ov.querySelector('.mobile-menu-grid a'); if(first) first.focus(); }, 60);
+                    }
+                    setActive();
+                }
+                // Close on overlay background click
+                document.addEventListener('click',(e)=>{ const ov=overlay(); if(!ov) return; if(ov.classList.contains('active') && e.target===ov){ toggleMenu(false); }});
+                // Esc key
+                document.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ toggleMenu(false); }});
+                // Activate navigation links
+                document.addEventListener('click',(e)=>{
+                    const link = e.target.closest('.mobile-menu-grid a'); if(!link) return;
+                    toggleMenu(false);
+                });
+                        window.addEventListener('pageshow', setActive);
+                        document.addEventListener('DOMContentLoaded', ()=>{
+                            setActive();
+                            // Handle post-redirect focus flag (if user came from bottom nav search)
+                            try {
+                                if(sessionStorage.getItem('jstream:focusSearch')==='1'){
+                                    sessionStorage.removeItem('jstream:focusSearch');
+                                    const input=document.getElementById('searchInput');
+                                    if(input){
+                                        const sc=input.closest('.search-container');
+                                        if(sc && !sc.classList.contains('active')){
+                                            const btn=sc.querySelector('.search-btn'); if(btn) btn.click();
+                                        }
+                                        input.focus();
+                                    }
+                                }
+                            } catch(e){}
+                        });
+                return { go, search, toggleMenu };
+            })();
+        </script>
+        <script>
+            // Minimal CSS fallback if main styles didn't apply transition properly
+            (function(){
+                const styleTag = document.createElement('style');
+                styleTag.innerHTML = `.search-container.fallback-inline{position:relative}.search-container.fallback-inline .search-input{width:200px !important;opacity:1 !important;visibility:visible !important;pointer-events:auto !important;}`;
+                document.head.appendChild(styleTag);
+            })();
+        </script>
+    <script>
+      // Defensive: ensure spinner hides on window load even if content fails
+      window.addEventListener('load', () => {
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) spinner.hidden = true;
+      });
+      // Log unhandled errors and hide spinner to avoid infinite loading
+      window.addEventListener('unhandledrejection', (e) => {
+        console.error('Unhandled promise rejection:', e.reason);
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) spinner.hidden = true;
+      });
+      window.addEventListener('error', (e) => {
+        console.error('Unhandled error:', e.error || e.message);
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) spinner.hidden = true;
+      });
+      // Failsafe: hide spinner after 8 seconds no matter what
+      setTimeout(() => {
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) spinner.hidden = true, spinner.style.display = 'none';
+      }, 8000);
+
+            // Fallbacks if global search helpers not yet defined when button clicked
+            if (typeof window.toggleSearch !== 'function') {
+                window.toggleSearch = function() {
+                    const sc = document.querySelector('.search-container');
+                    const si = document.getElementById('searchInput');
+                    if (!sc) return;
+                        sc.classList.toggle('active');
+                        if (sc.classList.contains('active') && si) si.focus();
+                        // Fallback visibility check
+                        requestAnimationFrame(()=>{ if(si && si.getBoundingClientRect().width < 15){ si.style.width='180px'; si.style.opacity='1'; si.style.visibility='visible'; si.style.pointerEvents='auto'; }});
+                };
+            }
+            if (typeof window.handleSearchInput !== 'function') {
+                window.handleSearchInput = function(e){ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q) window.location.href = `search.html?q=${encodeURIComponent(q)}`; }};
+            }
+    </script>
+    <script src="assets/js/mobile-header.js"></script>
+  </body>
+</html>

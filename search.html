@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - JStream</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Favicon set -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="favicon_io/favicon.ico">
+</head>
+<body class="center-nav">
+    <!-- (Header intentionally minimal / hidden on mobile; search UI moved to hero) -->
+        <style>
+            /* Hide Trending Searches on mobile when search results are shown */
+            @media (max-width: 768px) {
+                /* Always hide Trending Section on mobile */
+                #trendingSection { display: none !important; }
+            }
+            /* Center nav menu only for this page */
+            .center-nav .navbar { gap:48px; }
+            .center-nav .navbar .nav-menu { gap:32px; margin-left:auto; margin-right:auto; }
+            /* Trending grid layout (desktop) */
+            #trendingSection { margin-top:48px; }
+            #trendingSection .trending-grid { display:grid; gap:20px; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); }
+            #trendingSection h2 { font-size:1.4rem; margin:0 0 20px; letter-spacing:.5px; }
+            #trendingSection .sim-card h5 { font-size:.8rem; font-weight:600; margin:0; line-height:1.2; }
+            /* Use global sim-card overlay; only badge tweak */
+            #trendingSection .sim-card .badge { position:absolute; top:6px; left:6px; background:#e50914; color:#fff; font-size:.65rem; padding:2px 6px; border-radius:4px; z-index:3; }
+            @media (min-width:1300px){ #trendingSection .trending-grid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); } }
+
+            /* Compact layout overrides for above-the-fold fit */
+            .search-hero { padding:18px 0 10px; display:flex; flex-direction:column; gap:10px; }
+            .search-hero-title { font-size:1.75rem; line-height:1.15; margin:0; }
+            @media (max-width: 768px){ .search-hero-title { font-size:1.4rem; } }
+            .search-hero-tagline { font-size:.9rem; margin:0; color:#ccc; max-width:720px; }
+            .search-panel { margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+            /* Refined search panel (slimmer bezels, clearer spacing) */
+            /* Reworked panel template */
+            .search-panel { 
+                margin-top:14px; 
+                padding:14px 18px 16px; 
+                background:linear-gradient(145deg,#121212,#0d0d0d); 
+                border:1px solid #252525; 
+                border-radius:14px; 
+                display:flex; 
+                flex-direction:column; 
+                gap:12px; 
+                max-width:420px; 
+            }
+            .search-panel:focus-within { border-color:#333; box-shadow:0 0 0 1px #333; }
+            .search-panel .form-control { display:flex; align-items:center; position:relative; }
+            .search-panel select,
+            .search-panel input[type=text] { 
+                -webkit-appearance:none; appearance:none; 
+                width:100%; 
+                height:44px; 
+                background:#191919; 
+                border:1px solid #303030; 
+                border-radius:8px; 
+                padding:0 14px; 
+                font-size:.85rem; 
+                color:#eee; 
+                letter-spacing:.15px; 
+                transition:.18s border, .18s background, .18s box-shadow; 
+            }
+            .search-panel select:hover,
+            .search-panel input[type=text]:hover { border-color:#3a3a3a; }
+            .search-panel select:focus,
+            .search-panel input[type=text]:focus { outline:none; border-color:#e50914; box-shadow:0 0 0 1px #e50914; }
+            .search-panel .search-field { padding:0; background:transparent; border:none; min-height:auto; border-radius:0; }
+            .search-panel .search-field svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; opacity:.55; pointer-events:none; }
+            .search-panel .search-field input { padding-left:38px !important; background:#191919; border:1px solid #303030; border-radius:8px; height:44px; font-size:.85rem; }
+            .search-panel .search-field input:hover { border-color:#3a3a3a; }
+            .search-panel .search-field input:focus { border-color:#e50914; box-shadow:0 0 0 1px #e50914; }
+            .search-panel small.helper { font-size:.65rem; letter-spacing:.5px; text-transform:uppercase; color:#777; padding-left:2px; }
+            .search-hero-title { position:relative; }
+            .search-hero-title::before, .search-hero-title::after { content:'✦'; color:#e50914; font-size:.9rem; position:relative; top:-2px; display:inline-block; margin:0 .55rem; filter:drop-shadow(0 0 2px rgba(229,9,20,.4)); }
+            .search-hero-title::before { margin-left:0; }
+            @media (max-width:768px){
+                .search-panel { padding:12px 14px 14px; gap:10px; border-radius:12px; }
+                .search-panel select, .search-panel input[type=text] { height:42px; font-size:.8rem; }
+                .search-panel .search-field input { height:42px; }
+                .search-hero-title::before, .search-hero-title::after { margin:0 .45rem; }
+            }
+            /* Extra-small devices (e.g., 320px width phones) */
+            @media (max-width: 340px){
+                .search-hero-title { font-size:1.15rem; }
+                .search-hero-title::before, .search-hero-title::after { font-size:.7rem; margin:0 .35rem; top:-1px; }
+                .search-hero-tagline { font-size:.75rem; }
+                .search-panel { padding:10px 12px 12px; gap:8px; }
+                .search-panel select, .search-panel input[type=text] { height:40px; font-size:.75rem; }
+                .search-panel .search-field input { height:40px; padding-left:34px !important; }
+                .search-panel .search-field svg { width:16px; height:16px; left:12px; }
+            }
+            /* Layout adjustments for wide screens: allow horizontal if room */
+            @media (min-width: 1000px){
+                .search-panel { flex-direction:row; align-items:flex-start; flex-wrap:nowrap; max-width:760px; }
+                .search-panel .form-control { flex:1; }
+                .search-panel select { max-width:260px; }
+            }
+            .results-heading { font-size:1rem; margin:6px 0 4px; font-weight:600; }
+            .search-results { margin-top:6px; }
+            .search-empty { padding:4px 0 0; }
+            .search-empty .empty-icon svg { width:56px; height:56px; }
+            .search-empty h2 { font-size:1.1rem; margin:8px 0 4px; }
+            .search-empty p { font-size:.85rem; margin:0; color:#aaa; }
+            #trendingSection { margin-top:24px; }
+            #trendingSection h2 { font-size:1.15rem; margin:0 0 12px; }
+            #trendingSection .trending-grid { gap:14px; }
+            #trendingSection .sim-card h5 { font-size:.7rem; }
+            #trendingSection .sim-card .badge { font-size:.55rem; padding:2px 5px; }
+            @media (max-width:768px){
+                .results-heading { font-size:.95rem; }
+                .search-field { padding:5px 8px; }
+                .search-field input { font-size:.8rem; }
+            }
+        </style>
+        <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <a href="https://lloydskie.pages.dev/" class="logo" target="_blank" rel="noopener noreferrer">JStream</a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="tv.html" class="nav-link">TV Shows</a></li>
+                <li><a href="movie.html" class="nav-link">Movies</a></li>
+                <li><a href="search.html" class="nav-link active">New & Popular</a></li>
+                <li><a href="creator.html" class="nav-link">Creator</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Search Content -->
+    <main class="search-main">
+        <div class="container">
+            <!-- Search Hero Template -->
+            <section class="search-hero">
+                <h1 class="search-hero-title">Discover Your Next Favorite</h1>
+                <p class="search-hero-tagline">Search through thousands of movies, TV shows, and people.</p>
+                <div class="search-panel">
+                    <div class="search-scope">
+                        <label for="searchScope" class="visually-hidden">Search scope</label>
+                        <select id="searchScope" aria-label="Search scope">
+                            <option value="all" selected>Movies & TV Shows</option>
+                            <option value="movie">Movies</option>
+                            <option value="tv">TV Shows</option>
+                            <option value="person">People</option>
+                        </select>
+                    </div>
+                    <div class="search-field">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+                        <input id="searchInput" type="text" placeholder="Type here to search..." autocomplete="off" />
+                    </div>
+                </div>
+                <h2 id="searchTitle" class="results-heading" aria-live="polite">Search Results</h2>
+            </section>
+
+            <!-- Search Results -->
+            <div class="search-results" id="searchResults">
+                <!-- Initial state - no search -->
+                <div class="search-empty" id="searchEmpty">
+                    <div class="empty-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </div>
+                    <h2>Discover Something New</h2>
+                    <p>Search for movies, TV shows, or people you want to watch.</p>
+                </div>
+
+                <!-- Loading state -->
+                <div class="search-loading" id="searchLoading" hidden>
+                    <div class="spinner"></div>
+                    <p>Searching...</p>
+                </div>
+
+                <!-- No results state -->
+                <div class="search-no-results" id="searchNoResults" hidden>
+                    <div class="empty-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                    </div>
+                    <h2>No Results Found</h2>
+                    <p>Try searching for something else or check your spelling.</p>
+                </div>
+
+                <!-- Results grid -->
+                <div class="results-grid" id="resultsGrid" hidden>
+                    <!-- Search results will be populated here -->
+                </div>
+            </div>
+
+            <!-- Trending (desktop only) -->
+            <section class="trending-section" id="trendingSection">
+                <h2>Trending Now</h2>
+                <div class="trending-grid modern" id="trendingGrid"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Player Modal -->
+    <div class="player-modal" id="playerModal" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="player-container">
+            <button class="player-close" id="playerClose" aria-label="Close player">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+            <div class="player-header">
+                <h2 class="player-title" id="playerTitle">Title</h2>
+                <div class="player-meta" id="playerMeta">Media Type • Year</div>
+            </div>
+            <div class="player-content">
+                <div class="resume-prompt" id="resumePrompt" hidden>
+                    <div class="resume-text" id="resumeText">Continue watching from where you left off?</div>
+                    <div class="resume-actions">
+                        <button class="btn btn-primary" id="resumeContinue">Continue</button>
+                        <button class="btn btn-secondary" id="resumeRestart">Start Over</button>
+                    </div>
+                </div>
+                <div class="iframe-container" id="iframeContainer">
+                    <!-- Player iframe will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner" hidden>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Mobile Bottom Navigation & Overlay -->
+    <nav class="mobile-bottom-nav" aria-label="Primary mobile navigation">
+        <button class="mbn-item" data-nav="home" aria-label="Home" onclick="mbNav.go('index.html')">
+            <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke-linejoin="round"/></svg>
+            <span>Home</span>
+        </button>
+        <button class="mbn-item" data-nav="search" aria-label="Search" onclick="mbNav.search()">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>Search</span>
+        </button>
+        <button class="mbn-item" data-nav="menu" aria-label="All Sections" onclick="mbNav.toggleMenu()">
+            <svg viewBox="0 0 24 24"><path d="M3 5h6v6H3zM9 13H3v6h6zm2-8h10v2H11zm0 6h10v2H11zm0 6h10v2H11z"/></svg>
+            <span>Menu</span>
+        </button>
+    </nav>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" aria-hidden="true">
+        <div class="mobile-menu-panel" role="dialog" aria-modal="true" aria-label="JStream sections">
+            <button class="mobile-menu-close" aria-label="Close menu" onclick="mbNav.toggleMenu(false)">
+                <svg width="22" height="22" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" stroke="#bbb" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <ul class="mobile-menu-grid">
+                <li><a href="index.html" data-link="home">Home</a></li>
+                <li><a href="tv.html" data-link="tv">TV Shows</a></li>
+                <li><a href="movie.html" data-link="movies">Movies</a></li>
+                <li><a href="search.html" data-link="new">New & Popular</a></li>
+                <li><a href="creator.html" data-link="creator">Creator</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/player.js"></script>
+    <script>
+        // Mobile menu toggle function
+        function toggleMobileMenu() {
+            const navMenu = document.querySelector('.nav-menu');
+            const navToggle = document.querySelector('.nav-toggle');
+            if (navMenu && navToggle) {
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+            }
+        }
+
+        // Get search query from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlParams.get('q');
+        
+        if (searchQuery) {
+            document.getElementById('searchInput').value = searchQuery;
+            performSearch(searchQuery);
+        }
+        // Fallback helpers if global not present
+        if(typeof toggleSearch !== 'function'){
+            window.toggleSearch = function(){ const sc=document.querySelector('.search-container'); const si=document.getElementById('searchInput'); if(sc){ sc.classList.toggle('active'); if(sc.classList.contains('active')&&si) si.focus(); }};
+        }
+        if(typeof handleSearchInput !== 'function'){
+            window.handleSearchInput = function(e){
+                if(e.key==='Enter'){
+                    const q=e.target.value.trim();
+                    if(q) performSearch(q);
+                }
+            };
+        }
+
+        // Patch: Also update on trending tag click
+    document.addEventListener('DOMContentLoaded', function() { /* trending tags removed */ });
+    </script>
+    <script src="assets/js/search.js"></script>
+        <script>
+            window.mbNav = window.mbNav || (function(){
+                const overlay = ()=> document.getElementById('mobileMenuOverlay');
+                const items = ()=> document.querySelectorAll('.mobile-bottom-nav .mbn-item');
+                function setActive(){ const path=location.pathname.split('/').pop(); items().forEach(btn=>{ const key=btn.dataset.nav; let act=false; if(key==='home'&&(path===''||path==='index.html')) act=true; else if(key==='menu'&&overlay().classList.contains('active')) act=true; btn.classList.toggle('active',act); }); document.querySelectorAll('.mobile-menu-grid a').forEach(a=> a.classList.toggle('active', a.getAttribute('href')===path)); }
+                /* Added search page active highlight */
+                function setActive(){ const path=location.pathname.split('/').pop(); items().forEach(btn=>{ const key=btn.dataset.nav; let act=false; if(key==='home'&&(path===''||path==='index.html')) act=true; else if(key==='search'&& path==='search.html') act=true; else if(key==='menu'&&overlay().classList.contains('active')) act=true; btn.classList.toggle('active',act); }); document.querySelectorAll('.mobile-menu-grid a').forEach(a=> a.classList.toggle('active', a.getAttribute('href')===path)); }
+                function go(u){ location.href=u; }
+                function search(){
+                    const path=location.pathname.split('/').pop();
+                    if(path !== 'search.html'){
+                        try{ sessionStorage.setItem('jstream:focusSearch','1'); }catch(e){}
+                        location.href='search.html';
+                        return;
+                    }
+                    const sc=document.querySelector('.search-container');
+                    if(sc && !sc.classList.contains('active')){ const b=sc.querySelector('.search-btn'); if(b) b.click(); }
+                    const i=document.getElementById('searchInput');
+                    if(i){ i.focus(); i.scrollIntoView({behavior:'smooth',block:'center'}); }
+                    toggleMenu(false); setActive();
+                }
+                function toggleMenu(force){ const ov=overlay(); if(!ov) return; const willOpen= typeof force==='boolean'? force: !ov.classList.contains('active'); ov.classList.toggle('active', willOpen); document.body.classList.toggle('menu-open', willOpen); ov.setAttribute('aria-hidden', String(!willOpen)); if(willOpen){ setTimeout(()=>{ const first=ov.querySelector('.mobile-menu-grid a'); if(first) first.focus(); },60);} setActive(); }
+                document.addEventListener('click',e=>{ const ov=overlay(); if(!ov) return; if(ov.classList.contains('active') && e.target===ov){ toggleMenu(false); }});
+                document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleMenu(false); });
+                document.addEventListener('click',e=>{ const link=e.target.closest('.mobile-menu-grid a'); if(!link) return; toggleMenu(false); });
+                window.addEventListener('pageshow', setActive); document.addEventListener('DOMContentLoaded', ()=>{ setActive(); try{ if(sessionStorage.getItem('jstream:focusSearch')==='1'){ sessionStorage.removeItem('jstream:focusSearch'); const i=document.getElementById('searchInput'); if(i){ const sc=i.closest('.search-container'); if(sc && !sc.classList.contains('active')){ const b=sc.querySelector('.search-btn'); if(b) b.click(); } i.focus(); } } }catch(e){} });
+                return { go, search, toggleMenu };
+            })();
+    </script>
+    <script src="assets/js/mobile-header.js"></script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Details - JStream</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Favicon set -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="favicon_io/favicon.ico">
+</head>
+<body class="movie-page">
+        <!-- Header (unified) -->
+        <header class="header">
+            <nav class="navbar">
+                <div class="nav-brand">
+                    <a href="https://lloydskie.pages.dev/" class="logo" target="_blank" rel="noopener noreferrer">JStream</a>
+                </div>
+                <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileMenu()">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="nav-link">Home</a></li>
+                    <li><a href="tv.html" class="nav-link">TV Shows</a></li>
+                    <li><a href="movie.html" class="nav-link active">Movies</a></li>
+                    <li><a href="search.html" class="nav-link">New & Popular</a></li>
+                    <li><a href="creator.html" class="nav-link">Creator</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <div class="search-container">
+                        <button class="search-btn" aria-label="Search" onclick="toggleSearch()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        </button>
+                        <input id="searchInput" type="text" class="search-input" placeholder="Search titles, people, genres" onkeyup="handleSearchInput(event)">
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+    <!-- Movie Hero Section -->
+    <section class="show-hero" id="movieHero">
+        <div class="hero-bg" id="heroBg"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content-wrapper">
+            <div class="hero-meta-block">
+                <h1 id="movieTitle" class="show-title">Loading...</h1>
+                <div class="show-inline-meta" id="inlineMeta"></div>
+                <div class="genre-pills" id="genrePills"></div>
+                <p id="movieOverview" class="show-overview">Loading description...</p>
+                <div class="hero-actions">
+                    <button id="playButton" class="btn btn-primary hero-play" data-movie-id="">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <span>Play</span>
+                    </button>
+                    <button class="circle-btn" id="castScroll" title="Cast"><span>Cast</span></button>
+                    <button class="circle-btn" id="similarScroll" title="Similar"><span>Similar</span></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Movie Content -->
+    <main class="show-main">
+        <!-- Movies Listing Grid (shown when no movie ID) -->
+        <section class="browse-section" id="moviesGrid" style="display: none;">
+            <div class="section-head">
+                <h2>Popular Movies</h2>
+                <div class="movies-filters">
+                    <button class="filter-btn active" data-filter="popular">Popular</button>
+                    <button class="filter-btn" data-filter="top-rated">Top Rated</button>
+                    <button class="filter-btn" data-filter="now-playing">Now Playing</button>
+                    <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+                </div>
+            </div>
+            <div class="similar-grid modern" id="moviesContainer">
+                <!-- Movies will be populated dynamically -->
+            </div>
+        </section>
+
+        <!-- Individual Movie Details (shown when movie ID provided) -->
+        <div id="movieDetails" style="display: none;">
+            <!-- Cast & Crew -->
+            <section class="cast-wrapper" id="castSection">
+                <h2>Cast & Crew</h2>
+                <div class="actor-grid" id="castGrid">
+                    <!-- Cast members will be populated dynamically -->
+                </div>
+            </section>
+
+            <!-- Similar Movies -->
+            <section class="similar-wrapper" id="similarSection">
+                <h2>More Like This</h2>
+                <div class="similar-grid modern" id="similarGrid">
+                    <!-- Similar movies will be populated dynamically -->
+                </div>
+            </section>
+
+            <!-- Reviews -->
+            <section class="reviews-wrapper" id="reviewsSection">
+                <h2>Reviews</h2>
+                <div class="reviews-container" id="reviewsContainer">
+                    <!-- Reviews will be populated dynamically -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal removed: standalone player pages handle playback -->
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner" hidden>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Mobile Bottom Navigation & Overlay -->
+    <nav class="mobile-bottom-nav" aria-label="Primary mobile navigation">
+        <button class="mbn-item" data-nav="home" aria-label="Home" onclick="mbNav.go('index.html')">
+            <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke-linejoin="round"/></svg>
+            <span>Home</span>
+        </button>
+        <button class="mbn-item" data-nav="search" aria-label="Search" onclick="mbNav.search()">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+            <span>Search</span>
+        </button>
+        <button class="mbn-item" data-nav="menu" aria-label="All Sections" onclick="mbNav.toggleMenu()">
+            <svg viewBox="0 0 24 24"><path d="M3 5h6v6H3zM9 13H3v6h6zm2-8h10v2H11zm0 6h10v2H11zm0 6h10v2H11z"/></svg>
+            <span>Menu</span>
+        </button>
+    </nav>
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay" aria-hidden="true">
+        <div class="mobile-menu-panel" role="dialog" aria-modal="true" aria-label="JStream sections">
+            <button class="mobile-menu-close" aria-label="Close menu" onclick="mbNav.toggleMenu(false)">
+                <svg width="22" height="22" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" stroke="#bbb" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <ul class="mobile-menu-grid">
+                <li><a href="index.html" data-link="home">Home</a></li>
+                <li><a href="tv.html" data-link="tv">TV Shows</a></li>
+                <li><a href="movie.html" data-link="movies">Movies</a></li>
+                <li><a href="search.html" data-link="new">New & Popular</a></li>
+                <li><a href="creator.html" data-link="creator">Creator</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <!-- player.js removed: using standalone player pages -->
+    <script src="assets/js/person-modal.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieId = urlParams.get("id");
+
+        if (movieId) {
+            loadMovieDetails(movieId);
+        } else {
+            // Show movies browse mode (similar to TV page without specific ID)
+            showMoviesBrowseMode();
+        }
+
+        async function loadMovieDetails(movieId) {
+            try {
+                // Hide movies listing sections
+                document.getElementById('moviesGrid').style.display = 'none';
+
+                const movie = await getMovieDetails(movieId);
+                
+                // Update hero section with movie data
+                document.getElementById('movieTitle').textContent = movie.title;
+                document.getElementById('movieOverview').textContent = movie.overview || 'No description available.';
+                
+                // Set background image
+                const heroBg = document.getElementById('heroBg');
+                if (movie.backdrop_path) {
+                    heroBg.style.backgroundImage = `url(${getImageURL(movie.backdrop_path, 'w1280')})`;
+                } else {
+                    heroBg.style.backgroundImage = 'none';
+                }
+
+                // Update inline meta (year, rating, runtime)
+                const inlineMeta = document.getElementById('inlineMeta');
+                const year = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
+                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+                const runtime = movie.runtime ? formatRuntime(movie.runtime) : 'N/A';
+                
+                inlineMeta.innerHTML = `
+                    <span>${year}</span>
+                    <span class="rating">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#e6b800">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        ${rating}
+                    </span>
+                    <span>${runtime}</span>
+                `;
+
+                // Update genre pills
+                const genrePills = document.getElementById('genrePills');
+                if (movie.genres && movie.genres.length > 0) {
+                    genrePills.innerHTML = movie.genres.slice(0, 6).map(genre => 
+                        `<span class="pill">${genre.name}</span>`
+                    ).join('');
+                } else {
+                    genrePills.innerHTML = '';
+                }
+
+                // Show and set up play button for the specific movie
+                const playBtn = document.getElementById('playButton');
+                playBtn.style.display = 'inline-flex';
+                playBtn.dataset.movieId = movieId;
+                playBtn.onclick = () => { window.location.href = `movie-player.html?id=${movieId}`; };
+
+                // Show and set up scroll button functionality
+                const castScrollBtn = document.getElementById('castScroll');
+                const similarScrollBtn = document.getElementById('similarScroll');
+                
+                castScrollBtn.style.display = 'inline-flex';
+                similarScrollBtn.style.display = 'inline-flex';
+                
+                castScrollBtn.onclick = () => {
+                    document.getElementById('castSection').scrollIntoView({ behavior: 'smooth' });
+                };
+                
+                similarScrollBtn.onclick = () => {
+                    document.getElementById('similarSection').scrollIntoView({ behavior: 'smooth' });
+                };
+
+                // Show movie details sections
+                document.getElementById('movieDetails').style.display = 'block';
+
+                // Load additional content
+                loadCastAndCrew(movie);
+                loadSimilarMovies(movie);
+                loadReviews(movie);
+
+            } catch (error) {
+                console.error('Failed to load movie details:', error);
+                document.getElementById('movieTitle').textContent = 'Error Loading Movie';
+                document.getElementById('movieOverview').textContent = 'Unable to load movie details. Please try again later.';
+            }
+        }
+
+        async function showMoviesBrowseMode() {
+            try {
+                // Hide individual movie sections
+                document.getElementById('movieDetails').style.display = 'none';
+
+                // Show the browse grid
+                document.getElementById('moviesGrid').style.display = 'block';
+
+                // Load popular movies by default
+                await loadMoviesGrid('popular');
+
+                // Set up first movie as hero (like TV page does)
+                const popularMovies = await getPopularMovies();
+                if (popularMovies && popularMovies.results && popularMovies.results[0]) {
+                    const firstMovie = popularMovies.results[0];
+                    setupBrowseHero(firstMovie);
+                }
+
+                // Add filter event listeners
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        // Update active filter
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        
+                        // Update section title
+                        const sectionHead = document.querySelector('#moviesGrid .section-head h2');
+                        const filterMap = {
+                            'popular': 'Popular Movies',
+                            'top-rated': 'Top Rated Movies',
+                            'now-playing': 'Now Playing',
+                            'upcoming': 'Upcoming Movies'
+                        };
+                        sectionHead.textContent = filterMap[e.target.dataset.filter] || 'Movies';
+                        
+                        // Load movies for selected filter
+                        await loadMoviesGrid(e.target.dataset.filter);
+                    });
+                });
+
+            } catch (error) {
+                console.error('Failed to load movies browse mode:', error);
+                document.getElementById('moviesContainer').innerHTML = `
+                    <div class="empty">Error Loading Movies. Unable to load movies. Please try again later.</div>
+                `;
+            }
+        }
+
+        function setupBrowseHero(movie) {
+            // Use the first movie from popular list to populate hero in browse mode
+            document.getElementById('movieTitle').textContent = movie.title;
+            document.getElementById('movieOverview').textContent = (movie.overview || 'No description available.').slice(0, 350);
+            
+            const heroBg = document.getElementById('heroBg');
+            if (movie.backdrop_path) {
+                heroBg.style.backgroundImage = `url(${getImageURL(movie.backdrop_path, 'w1280')})`;
+            }
+
+            // Update meta info
+            const year = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
+            const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+            
+            document.getElementById('inlineMeta').innerHTML = `
+                <span>${year}</span>
+                <span class="rating">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#e6b800">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                    ${rating}
+                </span>
+            `;
+
+            // Set up genre pills
+            if (movie.genre_ids && movie.genre_ids.length > 0) {
+                // You might need to map genre IDs to names here if available
+                document.getElementById('genrePills').innerHTML = '';
+            }
+
+            // Show and set up play button for the featured movie
+            const playBtn = document.getElementById('playButton');
+            playBtn.style.display = 'inline-flex';
+            playBtn.onclick = () => { window.location.href = `movie.html?id=${movie.id}`; };
+
+            // Hide scroll buttons in browse mode
+            document.getElementById('castScroll').style.display = 'none';
+            document.getElementById('similarScroll').style.display = 'none';
+        }
+
+        async function loadMoviesGrid(filterType) {
+            const container = document.getElementById('moviesContainer');
+            container.innerHTML = '<div class="loading">Loading movies...</div>';
+
+            try {
+                let movies;
+                switch (filterType) {
+                    case 'top-rated':
+                        movies = await getTopRatedMovies();
+                        break;
+                    case 'now-playing':
+                        movies = await getNowPlayingMovies();
+                        break;
+                    case 'upcoming':
+                        movies = await getUpcomingMovies();
+                        break;
+                    default:
+                        movies = await getPopularMovies();
+                }
+
+                if (movies && movies.results) {
+                    container.innerHTML = movies.results.map(movie => `
+                        <div class="sim-card" data-id="${movie.id}">
+                            <img src="${movie.poster_path ? getImageURL(movie.poster_path, 'w342') : 'assets/placeholder.png'}" 
+                                 alt="${movie.title}" loading="lazy" onerror="this.src='assets/placeholder.png'" />
+                            <div class="sim-overlay">
+                                <h5>${movie.title}</h5>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Add click handlers for movie cards
+                    container.querySelectorAll('.sim-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            window.location.href = `movie.html?id=${card.dataset.id}`;
+                        });
+                    });
+                } else {
+                    container.innerHTML = '<div class="empty">No movies found.</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load movies grid:', error);
+                container.innerHTML = '<div class="empty">Error loading movies. Please try again later.</div>';
+            }
+        }
+
+        function loadCastAndCrew(movie) {
+            const castGrid = document.getElementById('castGrid');
+            if (movie.credits && movie.credits.cast) {
+                castGrid.innerHTML = movie.credits.cast.slice(0, 12).map(person => `
+                    <div class="actor-card" tabindex="0" data-person-id="${person.id}" onclick="showPersonDetails(${person.id})">
+                        <div class="actor-img">
+                            <img src="${person.profile_path ? getImageURL(person.profile_path, 'w185') : 'assets/placeholder.png'}" 
+                                 alt="${person.name}" loading="lazy" onerror="this.src='assets/placeholder.png'"/>
+                        </div>
+                        <div class="actor-meta">
+                            <h4>${person.name}</h4>
+                            <p>${person.character || ''}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                castGrid.innerHTML = '<div class="empty">No cast information available.</div>';
+            }
+        }
+
+        function loadSimilarMovies(movie) {
+            const similarGrid = document.getElementById('similarGrid');
+            if (movie.similar && movie.similar.results && movie.similar.results.length > 0) {
+                similarGrid.innerHTML = movie.similar.results.slice(0, 18).map(similar => `
+                    <div class="sim-card" data-id="${similar.id}">
+                        <img src="${similar.poster_path ? getImageURL(similar.poster_path, 'w342') : 'assets/placeholder.png'}" 
+                             alt="${similar.title}" loading="lazy" onerror="this.src='assets/placeholder.png'" />
+                        <div class="sim-overlay">
+                            <h5>${similar.title}</h5>
+                        </div>
+                    </div>
+                `).join('');
+                
+                similarGrid.querySelectorAll('.sim-card').forEach(card => {
+                    card.addEventListener('click', () => { 
+                        window.location.href = `movie.html?id=${card.dataset.id}`; 
+                    });
+                });
+            } else {
+                similarGrid.innerHTML = '<div class="empty">No similar movies found.</div>';
+            }
+        }
+
+        function loadReviews(movie) {
+            const reviewsContainer = document.getElementById('reviewsContainer');
+            if (movie.reviews && movie.reviews.results && movie.reviews.results.length > 0) {
+                reviewsContainer.innerHTML = movie.reviews.results.slice(0, 3).map(review => `
+                    <div class="review-card">
+                        <div class="review-header">
+                            <h4>${review.author}</h4>
+                            <div class="review-rating">★ ${review.author_details.rating || 'N/A'}/10</div>
+                        </div>
+                        <p class="review-content">${review.content.substring(0, 300)}${review.content.length > 300 ? '...' : ''}</p>
+                    </div>
+                `).join('');
+            } else {
+                reviewsContainer.innerHTML = '<div class="empty">No reviews available.</div>';
+            }
+        }
+
+        // Helper function to format runtime
+        function formatRuntime(minutes) {
+            if (!minutes) return 'N/A';
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hours > 0) {
+                return `${hours}h ${mins}m`;
+            }
+            return `${mins}m`;
+        }
+
+        // (Search + mobile menu use global helpers from app.js when on index, redefine minimal here if app.js absent)
+        if(typeof handleSearchInput !== 'function'){
+            window.handleSearchInput = function(e){ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q) window.location.href = `search.html?q=${encodeURIComponent(q)}`; }};
+        }
+        if(typeof toggleSearch !== 'function'){
+            window.toggleSearch = function(){ const sc=document.querySelector('.search-container'); const si=document.getElementById('searchInput'); if(sc){ sc.classList.toggle('active'); if(sc.classList.contains('active')&&si) si.focus(); }};
+        }
+        if(typeof toggleMobileMenu !== 'function'){
+            window.toggleMobileMenu = function(){ const navMenu=document.querySelector('.nav-menu'); const navToggle=document.querySelector('.nav-toggle'); if(navMenu&&navToggle){ navMenu.classList.toggle('active'); navToggle.classList.toggle('active'); }};
+        }
+        </script>
+        <script>
+            window.mbNav = window.mbNav || (function(){
+                const overlay = ()=> document.getElementById('mobileMenuOverlay');
+                const items = ()=> document.querySelectorAll('.mobile-bottom-nav .mbn-item');
+                function setActive(){ const path=location.pathname.split('/').pop(); items().forEach(btn=>{ const key=btn.dataset.nav; let act=false; if(key==='home'&&(path===''||path==='index.html')) act=true; else if(key==='menu'&&overlay().classList.contains('active')) act=true; btn.classList.toggle('active',act); }); document.querySelectorAll('.mobile-menu-grid a').forEach(a=> a.classList.toggle('active', a.getAttribute('href')===path)); }
+                function go(u){ location.href=u; }
+                function search(){
+                    const path=location.pathname.split('/').pop();
+                    if(path !== 'search.html'){
+                        try{ sessionStorage.setItem('jstream:focusSearch','1'); }catch(e){}
+                        location.href='search.html';
+                        return;
+                    }
+                    const sc=document.querySelector('.search-container');
+                    if(sc && !sc.classList.contains('active')){ const b=sc.querySelector('.search-btn'); if(b) b.click(); }
+                    const i=document.getElementById('searchInput');
+                    if(i){ i.focus(); i.scrollIntoView({behavior:'smooth',block:'center'}); }
+                    toggleMenu(false); setActive();
+                }
+                function toggleMenu(force){ const ov=overlay(); if(!ov) return; const willOpen= typeof force==='boolean'? force: !ov.classList.contains('active'); ov.classList.toggle('active', willOpen); document.body.classList.toggle('menu-open', willOpen); ov.setAttribute('aria-hidden', String(!willOpen)); if(willOpen){ setTimeout(()=>{ const first=ov.querySelector('.mobile-menu-grid a'); if(first) first.focus(); },60);} setActive(); }
+                document.addEventListener('click',e=>{ const ov=overlay(); if(!ov) return; if(ov.classList.contains('active') && e.target===ov){ toggleMenu(false); }});
+                document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleMenu(false); });
+                document.addEventListener('click',e=>{ const link=e.target.closest('.mobile-menu-grid a'); if(!link) return; toggleMenu(false); });
+                window.addEventListener('pageshow', setActive); document.addEventListener('DOMContentLoaded', ()=>{ setActive(); try{ if(sessionStorage.getItem('jstream:focusSearch')==='1'){ sessionStorage.removeItem('jstream:focusSearch'); const i=document.getElementById('searchInput'); if(i){ const sc=i.closest('.search-container'); if(sc && !sc.classList.contains('active')){ const b=sc.querySelector('.search-btn'); if(b) b.click(); } i.focus(); } } }catch(e){} });
+                return { go, search, toggleMenu };
+            })();
+    </script>
+    <script src="assets/js/mobile-header.js"></script>
+</body>
+</html>
