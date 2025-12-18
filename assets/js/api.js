@@ -107,11 +107,11 @@ async function discoverTVByGenre(genreId, page = 1) {
 
 // Detail page functions
 async function getMovieDetails(id) {
-    return fetchData(`/movie/${id}?append_to_response=credits,videos,similar,reviews`);
+    return fetchData(`/movie/${id}?append_to_response=credits,videos,similar,reviews,images`);
 }
 
 async function getTvDetails(id) {
-    return fetchData(`/tv/${id}?append_to_response=credits,videos,similar,reviews`);
+    return fetchData(`/tv/${id}?append_to_response=credits,videos,similar,reviews,images`);
 }
 
 async function getTvSeasonDetails(tvId, seasonNumber) {
