@@ -48,33 +48,32 @@
         </nav>
     </header>
 
-    <!-- Hero Section (Carousel) -->
-    <section class="hero" id="hero" aria-label="Featured content carousel">
-        <div class="hero-slides" id="heroSlides">
-            <div class="hero-slide active loading" aria-hidden="false">
-                <div class="hero-backdrop"><div class="hero-image skeleton-bg"></div></div>
-                <div class="hero-content">
-                    <div class="hero-info">
-                        <h1 class="hero-title">Loading...</h1>
-                        <p class="hero-description">Loading description...</p>
-                        <div class="hero-actions">
-                            <button class="btn btn-primary play-btn" data-action="play" disabled>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                                Play
-                            </button>
-                            <button class="btn btn-secondary info-btn" data-action="info" disabled>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                                More Info
-                            </button>
-                        </div>
-                    </div>
+    <!-- Hero Section (Single hero with trailer) -->
+    <section class="hero" id="hero" aria-label="Featured content">
+        <div class="hero-backdrop">
+            <div id="heroTrailer" class="hero-trailer" aria-hidden="true"></div>
+            <div class="hero-image skeleton-bg" id="heroImage"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-info">
+                <img src="assets/images/logo-hero.png" alt="" class="hero-logo" style="max-width:220px; margin-bottom:12px; display:block;"/>
+                <h1 class="hero-title">Loading...</h1>
+                <p class="hero-description">Loading description...</p>
+                
+                <div class="hero-actions">
+                    <button class="btn btn-primary play-btn" id="heroPlay" data-action="play" disabled>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        Play
+                    </button>
+                    <button class="btn btn-secondary info-btn" id="heroInfo" data-action="info" disabled>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        More Info
+                    </button>
+                    <button class="btn btn-ghost mute-btn" id="heroMute" aria-pressed="false" title="Mute / Unmute">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9v6h4l5 5V4L9 9H5z"/></svg>
+                    </button>
                 </div>
             </div>
-        </div>
-        <div class="hero-carousel-controls" aria-hidden="false">
-            <button class="hero-nav hero-prev" aria-label="Previous slide">&#10094;</button>
-            <div class="hero-dots" id="heroDots" role="tablist" aria-label="Slide indicators"></div>
-            <button class="hero-nav hero-next" aria-label="Next slide">&#10095;</button>
         </div>
     </section>
 
@@ -161,41 +160,7 @@
                         </div>
                         <div class="row" id="upcoming"></div>
                 </section>
-
-                <!-- Genres Carousel -->
-                <section class="category" id="genresSection">
-                        <div class="section-header">
-                            <h2>Genres</h2>
-                            <div class="section-tabs small" id="genreTabs"></div>
-                        </div>
-                        <div class="row" id="genre-row"></div>
-                </section>
-        </main>
-
-        <footer class="site-footer">
-            <div class="footer-inner">
-                <div class="brand-col">
-                    <h3 class="footer-logo">JStream</h3>
-                    <p class="tagline">Stream Freely, Privately, and Securely</p>
-                </div>
-                <!-- <div class="link-col">
-                    <h4>Browse</h4>
-                    <ul>
-                        <li><a href="#top10Section">Top 10</a></li>
-                        <li><a href="#popularMoviesSection">Movies</a></li>
-                        <li><a href="#popularTvSection">TV Shows</a></li>
-                        <li><a href="#genresSection">Genres</a></li>
-                    </ul>
-                </div> -->
-                <!-- <div class="link-col">
-                    <h4>Library</h4>
-                    <ul>
-                        <li><a href="#continueWatchingSection">Continue Watching</a></li>
-                        <li><a href="#nowPlayingSection">Now Playing</a></li>
-                        <li><a href="#upcomingSection">Upcoming</a></li>
-                        <li><a href="#topRatedMoviesSection">Top Rated</a></li>
-                    </ul>
-                </div> -->
+                
                 <div class="meta-col">
                     <small>&copy; <span id="yearCopy"></span> JStream. Made with ❤️ by lloydskie.</small>
                 </div>
