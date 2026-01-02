@@ -2,80 +2,54 @@
 
 Purpose: Help an AI coding agent be productive quickly in this repo (static, client-side streaming UI).
 
-Big picture
-- **Type:** Static, client-side site (HTML/CSS/vanilla JS). No backend or build step. See [README.md](README.md).
-- **Pages:** `index.html`, `movie.html`, `tv.html`, `movie-player.html`, `tv-player.html`, `search.html` — each page wires plain JS modules in `assets/js/` or top-level `js/`.
-- **Data sources:** two models exist — remote TMDB API (wrapped in `assets/js/api.js`) and a local demo file `data/movies.json`. Use TMDB wrapper for real data and `data/movies.json` for offline/demo flows.
+## Big Picture Architecture
+- **Type:** Static, client-side site (HTML/CSS/vanilla JS). No backend or build step. Open `index.html` or run a local server.
+- **Pages:** `index.html` (homepage), `movie.html`, `tv.html`, `movie-player.html`, `tv-player.html`, `search.html` — each page wires plain JS modules from `assets/js/` or top-level `js/`.
+- **Data Sources:** Two modes exist — remote TMDB API (wrapped in `assets/js/api.js`) for production and local `data/movies.json` for offline/demo flows.
+- **Dual Implementations:** Parallel codebases for many features (modern TMDB-backed in `assets/js/`, legacy/demo in `js/`). Prefer editing `assets/js/` unless intentionally updating legacy demo.
+- **No Frameworks:** Pure vanilla JS, no bundlers, no package managers beyond optional Node for serving.
 
-Key files and responsibilities
-- `assets/js/api.js`: TMDB integration, caching, and exported helper functions (e.g. `getMovieDetails`, `searchMovies`). Refer to [assets/js/api.js](assets/js/api.js#L1-L40).
-- `assets/js/app.js`: modern homepage app and primary client logic (hero, carousels, rows). See [assets/js/app.js](assets/js/app.js#L1-L40).
-- `assets/js/search.js`: search bar, debounce logic, uses `searchMovies`, `searchTV`, and `searchMulti` from the TMDB wrapper. See [assets/js/search.js](assets/js/search.js#L1-L40).
-- `assets/js/player.js` and `assets/js/player-utils.js`: player integrations. `player.js` uses Vidking iframe embeds and localStorage continue-watching keys `jstream:progress:<id>` and `jstream:continueWatching`. See [assets/js/player.js](assets/js/player.js#L1-L40).
-- `data/movies.json`: demo dataset the top-level `js/app.js` uses for local-only flows. See [data/movies.json](data/movies.json#L1-L20).
-- `documentation/`: contains YouTube IFrame API notes used when implementing players.
+## Key Files & Responsibilities
+- `assets/js/api.js`: TMDB API wrapper with 5-minute in-memory caching, exported helpers like `getMovieDetails`, `searchMovies`. Global: `window.tmdb`.
+- `assets/js/app.js`: Modern homepage app class (`JStreamApp`) handling hero banners, carousels, rows, and `fetchPages` for paginated TMDB fetches.
+- `assets/js/search.js`: Search bar with 300ms debounce, uses TMDB `searchMulti`, `searchMovies`, `searchTV`.
+- `assets/js/player.js` & `assets/js/player-utils.js`: Player modal, Vidking iframe embeds, progress/continue-watching via localStorage. Globals: `window.jstreamPlayer`, `window.openPlayerModal`, `window.embedMovie`, `window.embedTv`.
+- `js/app.js`: Legacy/demo UI using `data/movies.json` (useful for offline testing). Different progress keys and older patterns.
+- `data/movies.json`: Local demo dataset with sample movies/TV shows including `tmdbId` for cross-referencing.
 
-```markdown
-# Copilot / AI Agent Instructions for JStreamV2-web
+## Critical Developer Workflows
+- **Local Serving:** No build required. Use `python -m http.server 8000` or `npx serve .` then open `http://localhost:8000/index.html`. File:// protocol breaks YouTube embeds due to origin policies.
+- **YouTube Hero Trailers:** `assets/js/app.js` loads YouTube IFrame API dynamically with `HERO_INIT_DELAY` (2.5s) and `HERO_PLAYCHECK_DELAY` (1.4s) for muted autoplay. Sets `origin` param to avoid embed errors.
+- **Player Integration:** Vidking iframe embeds via `embedMovie(tmdbId, options)` and `embedTv(tmdbId, season, episode, options)`. Progress saved every 5s to localStorage.
+- **Accessibility:** Homepage preserves keyboard & focus behaviors (tabindex, aria attributes). Update focus traps and ARIA when changing DOM ids/classes.
 
-Purpose: Help an AI coding agent be productive quickly in this repo (static, client-side streaming UI).
+## Project-Specific Conventions & Patterns
+- **Globals for Cross-File Usage:** Modules expose helpers on `window` (e.g., `window.tmdb.getMovieDetails(id)`, `window.jstreamPlayer.openPlayer(options)`).
+- **Storage Keys:**
+  - Modern: `jstream:progress:<contentId>` and `jstream:continueWatching` (JSON array of progress objects).
+  - Legacy: `jstream:player:progress:<contentId>` — migrate data when updating legacy code.
+- **Content Deduplication:** `JStreamApp` tracks `usedContentIds` (Set) and `rowContentIds` (Map) to prevent duplicates across homepage rows.
+- **Pagination Helper:** `fetchPages(fetcher, args, minItems, maxPages)` accumulates results across pages until `minItems` reached (max 5 pages).
+- **Image Handling:** TMDB images via `getImageURL(path, size)` with fallback to `assets/placeholder.png`.
+- **Error Handling:** TMDB fetches use try/catch with console.error; player saves use try/catch with console.warn.
 
-Quick summary
-- Type: Static client-side site (HTML, CSS, vanilla JS). No bundler or backend by default — open `index.html` or run a static server.
-- Two runtime paths: `assets/js/` (modern TMDB-backed code) and top-level `js/` (legacy/local `data/movies.json` demo). Prefer editing `assets/js/` unless you intentionally change the legacy demo.
+## Integration Points & External Dependencies
+- **TMDB API:** Free API key hardcoded in `api.js` (replace for production). Endpoints: trending, popular, search, details with credits/videos/similar.
+- **Vidking Embeds:** Primary player provider for movies/TV. No API key needed.
+- **YouTube IFrame API:** Dynamically loaded for hero trailer playback. Requires `origin` param for HTTPS serving.
+- **Local Demo Data:** `data/movies.json` mirrors TMDB structure for offline development.
 
-Key files & examples
-- `assets/js/api.js` — TMDB wrapper and caching. Use `window.tmdb` helpers (e.g. `window.tmdb.getMovieDetails(id)`, `window.tmdb.searchMovies(q)`).
-- `assets/js/app.js` — modern homepage logic: hero, rows, fetch paging helpers (`fetchPages`), and keyboard/ARIA-friendly row behavior.
-- `assets/js/search.js` — search debounce + TMDB search helpers.
-- `assets/js/player.js` & `assets/js/player-utils.js` — player modal, Vidking embed helpers, and progress/continue-watching state. Global: `window.jstreamPlayer`, `window.openPlayerModal`.
-- `js/app.js` — legacy/local UI using `data/movies.json` (useful for offline/testing). It uses different progress keys and older UI patterns.
-- `data/movies.json` — local demo dataset used by legacy `/js` flow.
-- `documentation/` — YouTube IFrame API notes used by hero/player code.
+## Examples from Codebase
+- **TMDB Fetch with Caching:** `const details = await window.tmdb.getMovieDetails(12345);`
+- **Player Open:** `window.openPlayerModal({ tmdbId: 123, type: 'movie', title: 'Example' });`
+- **Progress Load:** `const saved = JSON.parse(localStorage.getItem('jstream:progress:movie-12345'));`
+- **Hero Trailer Setup:** `const YT = await this.loadYouTubeApi(); const player = new YT.Player(iframe, { ... });`
 
-Important conventions & patterns (repo-specific)
-- Globals: Modules often expose helpers on `window` for cross-file usage. Examples: `window.tmdb`, `window.jstreamPlayer`, `window.embedMovie`, `window.openPlayerModal`.
-- Dual implementations: There are parallel implementations for many features (modern in `assets/js/`, legacy in `js/`). Make edits in one path only unless you intentionally sync both.
-- Storage keys:
-  - Modern player and continue-watching: `jstream:progress:<contentId>` and `jstream:continueWatching` (see `assets/js/player.js`).
-  - Legacy code uses `jstream:player:progress:<contentId>` — be cautious when migrating or reading old keys.
-- Player provider: Vidking iframe is the primary embed. Helper builders: `embedMovie(tmdbId, options)` and `embedTv(tmdbId, season, episode, options)` (global functions).
-- YouTube embed handling: `assets/js/app.js` loads the YouTube IFrame API dynamically and uses the API to manage hero trailers (delays, mute/unmute policy, origin param). See `loadYouTubeApi()` and trailer init timing (`HERO_INIT_DELAY`, `HERO_PLAYCHECK_DELAY`).
-- Accessibility: homepage preserves keyboard & focus behaviors (tabindex, aria attributes). If you change DOM ids/classes, update focus traps and ARIA in the same PR.
+## Debugging Tips & Gotchas
+- **YouTube Origin Errors:** Serve over HTTP/HTTPS, not file://. Set `origin` in player params.
+- **Progress Key Mismatch:** Modern uses `jstream:progress:<id>`, legacy `jstream:player:progress:<id>` — include both when migrating.
+- **Caching Bypass:** Restart server or wait 5min for TMDB cache expiry during testing.
+- **Mobile/Desktop Differences:** Search hides trending section on mobile (`window.innerWidth <= 768`).
+- **Focus Management:** Modal opens trap focus; close restores previous element.
 
-Developer workflows & quick commands
-- No build step required. For local serving (PowerShell examples):
-  - Python static server:
-    ```pwsh
-    python -m http.server 8000
-    ```
-  - Node `serve` (if Node is installed):
-    ```pwsh
-    npx serve .
-    ```
-- Open `http://localhost:8000/index.html` to test full behavior (YouTube origin and iframe policies behave better when served over HTTP/HTTPS than file://).
-- Tests: no automated test harness. Some modules export via `module.exports` for small Node-based tests (you can `require()` `assets/js/api.js` in Node for unit checks).
-
-Editing guidance for AI agents (practical & specific)
-- Prefer small, focused changes. Keep global names and public HTML ids stable unless changing them project-wide.
-- When adding runtime behavior, use existing globals: example — `const details = await window.tmdb.getMovieDetails(12345);`.
-- For player/progress changes: read/write the existing localStorage keys. Example read:
-  ```js
-  const saved = JSON.parse(localStorage.getItem('jstream:progress:movie-12345'));
-  ```
-- If you add a new dependency or build step, update `README.md` and include a `package.json` + simple run scripts; get approval first (project intentionally has no bundler).
-- If modifying UI markup used by JS (ids/classes), update all pages that include that component (pages in root: `index.html`, `movie.html`, `tv.html`, `movie-player.html`, `tv-player.html`, `search.html`) and the corresponding `assets/js/*` or `js/*` file.
-
-Debugging tips & gotchas
-- YouTube iframe origin: `assets/js/app.js` sets `origin` query param to avoid YouTube embed errors. When testing locally, serve pages rather than using `file://`.
-- Progress key mismatch: modern code uses `jstream:progress:<id>` while legacy code uses `jstream:player:progress:<id>` — include both when migrating data.
-- Caching: `assets/js/api.js` uses an in-memory cache (`apiCache`) with a 5-minute expiry — tests expecting fresh TMDB results may need cache bypass or server restart.
-
-Where to look for examples
-- Hero + trailer logic: `assets/js/app.js` (search for `loadYouTubeApi`, `buildHeroSlides`).
-- TMDB wrapper: `assets/js/api.js` (see `fetchDataWithParams`, `getMovieDetails`).
-- Player modal & progress: `assets/js/player.js` (search `jstream:progress`, `continueWatching` and `openPlayer`).
-- Legacy demo behavior: `js/app.js` and `data/movies.json`.
-
-If anything above is unclear or you'd like the file expanded with more code snippets (e.g., exact localStorage schemas, example events like `continueWatchingUpdated`), tell me which section to expand and I will iterate.
-```
+If anything above is unclear or you'd like expansion (e.g., exact localStorage schemas, event flows), tell me which section to expand and I will iterate.
